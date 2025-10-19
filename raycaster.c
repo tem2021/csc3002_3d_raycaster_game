@@ -1,9 +1,17 @@
 //https://www.youtube.com/watch?v=gYRrGTC7GtA
 
-#include <GL/freeglut_std.h>
-#include <GL/gl.h>
-#include <GL/glu.h>
-#include <GL/glut.h>
+#ifdef _WIN32
+	// Windows (MinGW or Visual Studio with FreeGLUT)
+	#include <GL/freeglut.h>
+	#include <GL/gl.h>
+	#include <GL/glu.h>
+#else
+	// macOS (Apple's native GLUT)
+	#include <GLUT/glut.h>
+	#include <OpenGL/gl.h>
+	#include <OpenGL/glu.h>
+#endif
+
 #include <math.h>
 #include <stdio.h>
 #include <stdbool.h>
@@ -218,23 +226,23 @@ void display(){
 
 //unsigned 用来减少存储空间，增加代码可读性，表示这个变量不会出现负数
 void buttons(unsigned char key, int x, int y){
-    if(key=='h'){
+    if(key=='a'){
         pa -= 0.1; 
         if (pa < 0){ pa += 2*PI; } 
         pdx = cos(pa) * 5; 
         pdy = sin(pa) * 5;
     }
-    if(key=='l'){
+    if(key=='d'){
         pa += 0.1; 
         if (pa > 2 * PI){ pa -= 2*PI; } 
         pdx = cos(pa) * 5; 
         pdy = sin(pa) * 5;
     }
-    if(key=='k'){
+    if(key=='w'){
         px += pdx;
         py += pdy;
     }
-    if(key=='j'){
+    if(key=='s'){
         px -= pdx;
         py -= pdy;
     }
