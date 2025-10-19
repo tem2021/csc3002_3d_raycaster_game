@@ -4,29 +4,36 @@ _A game where you feed hungry animals_
 
 ---
 
-## Supported platforms
-
-Windows
-MacOS
-
 ## How to build (using command line)
 
 Windows:
-``gcc raycaster.c -o raycaster -lfreeglut -lopengl32 -lglu32``
-``./raycaster``
+
+```
+gcc raycaster.c -o raycaster -lfreeglut -lopengl32 -lglu32
+
+./raycaster
+```
 
 MacOS:
-``clang raycaster.c -o raycaster -framework OpenGL -framework GLUT``
-``./raycaster``
+
+```
+clang raycaster.c -o raycaster -framework OpenGL -framework GLUT
+
+./raycaster
+```
 
 If you're using VS Code (haven't tested other apps), you should be able to just press run and it will compile and run the raycaster.
 
 ## Keyboard controls
 
 a = turn left
+
 d = turn right
+
 w = move forward
+
 s = move backward
+
 i = toggle debug info
 
 ## Credits
