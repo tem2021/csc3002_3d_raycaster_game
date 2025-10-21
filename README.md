@@ -6,10 +6,18 @@ _A game where you feed hungry animals_
 
 ## How to build (using command line)
 
+You can simply use 
+
+```
+make 
+```
+
+or
+
 Windows:
 
 ```
-gcc raycaster.c -o raycaster -lfreeglut -lopengl32 -lglu32
+gcc raycaster.c -o raycaster -lfreeglut -lopengl32 -lglu32 -lm
 
 ./raycaster
 ```
@@ -17,7 +25,15 @@ gcc raycaster.c -o raycaster -lfreeglut -lopengl32 -lglu32
 MacOS:
 
 ```
-clang raycaster.c -o raycaster -framework OpenGL -framework GLUT
+clang raycaster.c -o raycaster -framework OpenGL -framework GLUT -lm
+
+./raycaster
+```
+
+Linux: 
+
+```
+gcc raycaster.c -o raycaster -lGL -lGLU -lglut -lm
 
 ./raycaster
 ```
