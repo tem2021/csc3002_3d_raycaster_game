@@ -5,11 +5,16 @@
 	#include <GL/freeglut.h>
 	#include <GL/gl.h>
 	#include <GL/glu.h>
-#else
+#elif defined(__APPLE__)
 	// macOS (Apple's native GLUT)
 	#include <GLUT/glut.h>
 	#include <OpenGL/gl.h>
 	#include <OpenGL/glu.h>
+#elif defined(__linux__)
+    // Linux (FreeGLUT)
+    #include <GL/freeglut.h>
+    #include <GL/gl.h>
+    #include <GL/glu.h>
 #endif
 
 #include <math.h>
