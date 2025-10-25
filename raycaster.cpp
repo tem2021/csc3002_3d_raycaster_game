@@ -71,15 +71,15 @@ void infoList(){
 }
 
 int mapX = 8, mapY = 8, mapS = 64;
-int map[] = {
-    1, 1, 1, 1, 1, 1, 1, 1,
-    1, 0, 0, 0, 0, 0, 0, 1, 
-    1, 0, 1, 1, 0, 1, 0, 1, 
-    1, 0, 0, 0, 0, 1, 0, 1, 
-    1, 0, 1, 1, 0, 1, 0, 1, 
-    1, 0, 0, 0, 0, 1, 0, 1, 
-    1, 0, 0, 0, 0, 0, 0, 1, 
-    1, 1, 1, 1, 1, 1, 1, 1,
+int map[8][8] = {
+	{1, 1, 1, 1, 1, 1, 1, 1},
+	{1, 0, 0, 0, 0, 0, 0, 1},
+	{1, 0, 1, 1, 0, 1, 0, 1},
+	{1, 0, 0, 0, 0, 1, 0, 1},
+	{1, 0, 1, 1, 0, 1, 0, 1},
+	{1, 0, 0, 0, 0, 1, 0, 1},
+	{1, 0, 0, 0, 0, 0, 0, 1},
+	{1, 1, 1, 1, 1, 1, 1, 1},
 };
 
 float dist(float ax, float ay, float bx, float by, float ang) {
@@ -87,24 +87,25 @@ float dist(float ax, float ay, float bx, float by, float ang) {
 }
 
 void drawMap2D(){
-    int x, y, xo, yo;
-    for (y = 0; y < mapY; y++) {
-        for (x = 0; x < mapX; x++) {
-            if (map[y*mapX + x] == 1){
-                glColor3f(1,1,1);
-            }else {
-                glColor3f(0,0,0);
-            }
-            xo=x*mapS; 
-            yo=y*mapS;
-            glBegin(GL_QUADS); //开始绘制四边形
-            glVertex2i(xo + 1, yo + 1);
-            glVertex2i(xo + 1, yo + mapS - 1);
-            glVertex2i(xo + mapS - 1, yo + mapS -1);
-            glVertex2i(xo + mapS - 1, yo + 1);
-            glEnd();
-        }
-    }
+	int x, y, xo, yo;
+	for (y = 0; y < mapY; y++) {
+		for (x = 0; x < mapX; x++) {
+			if (map[y][x] == 1){
+				glColor3f(1,1,1);
+			}
+			else {
+				glColor3f(0,0,0);
+			}
+			xo=x*mapS; 
+			yo=y*mapS;
+			glBegin(GL_QUADS); //开始绘制四边形
+			glVertex2i(xo + 1, yo + 1);
+			glVertex2i(xo + 1, yo + mapS - 1);
+			glVertex2i(xo + mapS - 1, yo + mapS -1);
+			glVertex2i(xo + mapS - 1, yo + 1);
+			glEnd();
+		}
+	}	
 }
 
 void drawRays2D(){
@@ -140,14 +141,14 @@ void drawRays2D(){
         } 
         while (dof < 8) {
             mx = (int)(rx) >> 6;
-            my = (int)(ry) >> 6;
-            mp = my * mapX + mx;
-            if (mp > 0 && mp < mapX * mapY && map[mp] == 1) { 
+            my = (int)(ry) >> 6;            
+            if ( mx >= 0 && mx < mapX && my >= 0 && my < mapY && map[my][mx] == 1) {
                 hx = rx;
                 hy = ry;
                 disH = dist(px, py, hx, hy, ra);
                 dof = 8;
-            } else {
+            }
+			else {
                 rx += xo;
                 ry += yo;
                 dof +=1;
@@ -176,9 +177,8 @@ void drawRays2D(){
         } 
         while (dof < 8) {
             mx = (int)(rx) >> 6;
-            my = (int)(ry) >> 6;
-            mp = my * mapX + mx;
-            if (mp > 0 && mp < mapX * mapY && map[mp] == 1) { 
+            my = (int)(ry) >> 6;            
+            if ( mx >= 0 && mx < mapX && my >= 0 && my < mapY && map[my][mx] == 1) {
                 dof = 8;
                 vx = rx;
                 vy = ry;
@@ -235,6 +235,19 @@ void keyUp(unsigned char key, int x, int y) {
 	}
 }
 
+bool willCollide(float x, float y) {
+	int mapXIndex = (int)(x) / mapS;
+	int mapYIndex = (int)(y) / mapS;
+
+	// walking off of the map
+	if (mapXIndex < 0 || mapXIndex >= mapX || mapYIndex < 0 || mapYIndex >= mapY)
+		return true;
+
+	// walking into a wall
+	return map[mapYIndex][mapXIndex] == 1;
+}
+
+
 void updatePlayer() {
 	const float rotationSpeed = 0.02f; // radians per frame
 	const float moveSpeed = 1.2f;
@@ -252,12 +265,20 @@ void updatePlayer() {
 		pdy = sin(pa) * moveSpeed;
 	}
 	if(keystate[(unsigned char)'w']){
-		px += pdx;
-		py += pdy;
+		float newX = px + pdx;
+		float newY = py + pdy;
+		if (!willCollide(newX, newY)) {
+			px = newX;
+			py = newY;
+		}
 	}
 	if(keystate[(unsigned char)'s']){
-		px -= pdx;
-		py -= pdy;
+		float newX = px - pdx;
+		float newY = py - pdy;
+		if (!willCollide(newX, newY)) {
+			px = newX;
+			py = newY;
+		}
 	}
 }
 
