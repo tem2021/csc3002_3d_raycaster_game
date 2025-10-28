@@ -17,7 +17,7 @@ or
 Windows:
 
 ```
-gcc raycaster.c -o raycaster -lfreeglut -lopengl32 -lglu32 -lm
+gcc raycaster.cpp -o raycaster -lfreeglut -lopengl32 -lglu32 -lm
 
 ./raycaster
 ```
@@ -25,7 +25,7 @@ gcc raycaster.c -o raycaster -lfreeglut -lopengl32 -lglu32 -lm
 MacOS:
 
 ```
-clang raycaster.c -o raycaster -framework OpenGL -framework GLUT -lm
+clang raycaster.cpp -o raycaster -framework OpenGL -framework GLUT -lm
 
 ./raycaster
 ```
@@ -33,7 +33,7 @@ clang raycaster.c -o raycaster -framework OpenGL -framework GLUT -lm
 Linux: 
 
 ```
-gcc raycaster.c -o raycaster -lGL -lGLU -lglut -lm
+gcc raycaster.cpp -o raycaster -lGL -lGLU -lglut -lm
 
 ./raycaster
 ```

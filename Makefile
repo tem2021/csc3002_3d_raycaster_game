@@ -1,5 +1,5 @@
 OS_NAME = ${shell uname -s}
-SRC = raycaster.c
+SRC = raycaster.cpp
 TARGET = raycaster
 
 # Default: Linux

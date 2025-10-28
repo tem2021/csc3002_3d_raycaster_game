@@ -20,6 +20,7 @@
 #include <math.h>
 #include <stdio.h>
 #include <stdbool.h>
+#include <string.h> // for memset
 #define PI 3.1415926535
 #define DR 0.0174533    //one degree in radians
 
@@ -70,15 +71,15 @@ void infoList(){
 }
 
 int mapX = 8, mapY = 8, mapS = 64;
-int map[] = {
-    1, 1, 1, 1, 1, 1, 1, 1,
-    1, 0, 0, 0, 0, 0, 0, 1, 
-    1, 0, 1, 1, 0, 1, 0, 1, 
-    1, 0, 0, 0, 0, 1, 0, 1, 
-    1, 0, 1, 1, 0, 1, 0, 1, 
-    1, 0, 0, 0, 0, 1, 0, 1, 
-    1, 0, 0, 0, 0, 0, 0, 1, 
-    1, 1, 1, 1, 1, 1, 1, 1,
+int map[8][8] = {
+	{1, 1, 1, 1, 1, 1, 1, 1},
+	{1, 0, 0, 0, 0, 0, 0, 1},
+	{1, 0, 1, 1, 0, 1, 0, 1},
+	{1, 0, 0, 0, 0, 1, 0, 1},
+	{1, 0, 1, 1, 0, 1, 0, 1},
+	{1, 0, 0, 0, 0, 1, 0, 1},
+	{1, 0, 0, 0, 0, 0, 0, 1},
+	{1, 1, 1, 1, 1, 1, 1, 1},
 };
 
 float dist(float ax, float ay, float bx, float by, float ang) {
@@ -86,28 +87,29 @@ float dist(float ax, float ay, float bx, float by, float ang) {
 }
 
 void drawMap2D(){
-    int x, y, xo, yo;
-    for (y = 0; y < mapY; y++) {
-        for (x = 0; x < mapX; x++) {
-            if (map[y*mapX + x] == 1){
-                glColor3f(1,1,1);
-            }else {
-                glColor3f(0,0,0);
-            }
-            xo=x*mapS; 
-            yo=y*mapS;
-            glBegin(GL_QUADS); //开始绘制四边形
-            glVertex2i(xo + 1, yo + 1);
-            glVertex2i(xo + 1, yo + mapS - 1);
-            glVertex2i(xo + mapS - 1, yo + mapS -1);
-            glVertex2i(xo + mapS - 1, yo + 1);
-            glEnd();
-        }
-    }
+	int x, y, xo, yo;
+	for (y = 0; y < mapY; y++) {
+		for (x = 0; x < mapX; x++) {
+			if (map[y][x] == 1){
+				glColor3f(1,1,1);
+			}
+			else {
+				glColor3f(0,0,0);
+			}
+			xo=x*mapS; 
+			yo=y*mapS;
+			glBegin(GL_QUADS); //开始绘制四边形
+			glVertex2i(xo + 1, yo + 1);
+			glVertex2i(xo + 1, yo + mapS - 1);
+			glVertex2i(xo + mapS - 1, yo + mapS -1);
+			glVertex2i(xo + mapS - 1, yo + 1);
+			glEnd();
+		}
+	}	
 }
 
 void drawRays2D(){
-    int mx, my, mp, dof; 
+    int mx, my, dof; 
     float rx, ry, ra, xo, yo, disT;
     ra = pa - DR * 30; 
     for (int r = 0; r < 120; r++){
@@ -139,14 +141,14 @@ void drawRays2D(){
         } 
         while (dof < 8) {
             mx = (int)(rx) >> 6;
-            my = (int)(ry) >> 6;
-            mp = my * mapX + mx;
-            if (mp > 0 && mp < mapX * mapY && map[mp] == 1) { 
+            my = (int)(ry) >> 6;            
+            if ( mx >= 0 && mx < mapX && my >= 0 && my < mapY && map[my][mx] == 1) {
                 hx = rx;
                 hy = ry;
                 disH = dist(px, py, hx, hy, ra);
                 dof = 8;
-            } else {
+            }
+			else {
                 rx += xo;
                 ry += yo;
                 dof +=1;
@@ -175,9 +177,8 @@ void drawRays2D(){
         } 
         while (dof < 8) {
             mx = (int)(rx) >> 6;
-            my = (int)(ry) >> 6;
-            mp = my * mapX + mx;
-            if (mp > 0 && mp < mapX * mapY && map[mp] == 1) { 
+            my = (int)(ry) >> 6;            
+            if ( mx >= 0 && mx < mapX && my >= 0 && my < mapY && map[my][mx] == 1) {
                 dof = 8;
                 vx = rx;
                 vy = ry;
@@ -218,43 +219,86 @@ void drawRays2D(){
     }
 }
 
+// 256 because ASCII codes fit in 256 elements
+bool keystate[256];
+
+//unsigned 用来减少存储空间，增加代码可读性，表示这个变量不会出现负数
+void keyDown(unsigned char key, int x, int y) {
+	keystate[(unsigned char)key] = true;
+}
+
+void keyUp(unsigned char key, int x, int y) {
+	keystate[(unsigned char)key] = false;
+	
+	if (key == 'i') {
+		showinfo = !showinfo;
+	}
+}
+
+bool willCollide(float x, float y) {
+	int mapXIndex = (int)(x) / mapS;
+	int mapYIndex = (int)(y) / mapS;
+
+	// walking off of the map
+	if (mapXIndex < 0 || mapXIndex >= mapX || mapYIndex < 0 || mapYIndex >= mapY)
+		return true;
+
+	// walking into a wall
+	return map[mapYIndex][mapXIndex] == 1;
+}
+
+
+void updatePlayer() {
+	const float rotationSpeed = 0.02f; // radians per frame
+	const float moveSpeed = 1.2f;
+
+	if(keystate[(unsigned char)'a']){
+		pa -= rotationSpeed; 
+		if (pa < 0){ pa += 2*PI; } 
+		pdx = cos(pa) * moveSpeed; 
+		pdy = sin(pa) * moveSpeed;
+	}
+	if(keystate[(unsigned char)'d']){
+		pa += rotationSpeed; 
+		if (pa > 2 * PI){ pa -= 2*PI; } 
+		pdx = cos(pa) * moveSpeed; 
+		pdy = sin(pa) * moveSpeed;
+	}
+	if(keystate[(unsigned char)'w']){
+		float newX = px + pdx;
+		float newY = py + pdy;
+		if (!willCollide(newX, newY)) {
+			px = newX;
+			py = newY;
+		}
+	}
+	if(keystate[(unsigned char)'s']){
+		float newX = px - pdx;
+		float newY = py - pdy;
+		if (!willCollide(newX, newY)) {
+			px = newX;
+			py = newY;
+		}
+	}
+}
 
 //程序会把新一帧画面先画在后缓冲区，等画好后再一次性切换到前缓冲区里
 void display(){
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); //清除屏幕上的颜色缓冲区和深度缓冲区
-    drawMap2D();    //先绘制地图
+	// update game state
+	updatePlayer();
+
+	// render game state
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); //清除屏幕上的颜色缓冲区和深度缓冲区    
+	drawMap2D();    //先绘制地图
     drawPlayer();   //绘制玩家
     drawRays2D();   //初始化视野
     infoList();
     glutSwapBuffers();  //交换前后缓冲区，显示渲染结果
 }
 
-//unsigned 用来减少存储空间，增加代码可读性，表示这个变量不会出现负数
-void buttons(unsigned char key, int x, int y){
-    if(key=='a'){
-        pa -= 0.1; 
-        if (pa < 0){ pa += 2*PI; } 
-        pdx = cos(pa) * 5; 
-        pdy = sin(pa) * 5;
-    }
-    if(key=='d'){
-        pa += 0.1; 
-        if (pa > 2 * PI){ pa -= 2*PI; } 
-        pdx = cos(pa) * 5; 
-        pdy = sin(pa) * 5;
-    }
-    if(key=='w'){
-        px += pdx;
-        py += pdy;
-    }
-    if(key=='s'){
-        px -= pdx;
-        py -= pdy;
-    }
-    if(key=='i'){
-        showinfo = !showinfo;   //逻辑非, 或者可以用1-x, 或者 1^x （异或运算)
-    }
-    glutPostRedisplay();    //请求刷新窗口,GLUT主循环(glutMainLoop)检测到之后调用glutDisplayFunc,也就是display()
+void timerFunc(int value) {
+	glutPostRedisplay();
+	glutTimerFunc(16, timerFunc, 0); // will run timerFunc again after 16 ms, gives roughly 60 Hz
 }
 
 void init(){
@@ -263,6 +307,7 @@ void init(){
     showinfo = 0;
     px = 300; py = 300; pa = 0;   //玩家初始位置出现了
     pdx = cos(pa) * 5; pdy = sin(pa) * 5;     //初始的方向指向
+	memset(keystate, 0, sizeof(keystate)); // initialise keystate as array of 0
 }
 
 /*** 
@@ -285,6 +330,12 @@ int main(int argc, char* argv[]){
     glutCreateWindow("Raycaster");   //创建标题为Raycaster的窗口
     init();     //调用用户自定义初始化函数，设置背景色和坐标系等
     glutDisplayFunc(display);     //注册display函数为显示事件回调，每次刷新时调用display()
-    glutKeyboardFunc(buttons);    //注册buttons函数为键盘事件回调，当用户按键时自动调用它
-    glutMainLoop();     //进入GLUT事件主循环，程序一直运行直到关闭窗口
+    
+    // user input
+	glutKeyboardFunc(keyDown);
+	glutKeyboardUpFunc(keyUp);
+	
+	glutTimerFunc(16, timerFunc, 0);
+	
+	glutMainLoop();     //进入GLUT事件主循环，程序一直运行直到关闭窗口
 }
