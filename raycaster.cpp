@@ -109,7 +109,7 @@ void drawMap2D(){
 }
 
 void drawRays2D(){
-    int mx, my, mp, dof; 
+    int mx, my, dof; 
     float rx, ry, ra, xo, yo, disT;
     ra = pa - DR * 30; 
     for (int r = 0; r < 120; r++){
