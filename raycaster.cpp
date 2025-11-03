@@ -24,30 +24,20 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <string.h> // for memset
+
+#include "data.h"
                     
 const float PI = 3.1415926535;
 const float DR = 0.0174533;   // one degree in radians
-const int EDGE_BUFFER = 10;
+const float rotationSpeed = 0.0005f; // radians per frame
 
+float moveSpeed;
+int width, height, centerX, centerY;
+float mouseDeltaX; // movement for mouse at each frame
 float px, py, pdx, pdy, pa; // player position
-float mouseDeltaX = 0; // movement for mouse at each frame
-float moveSpeed = 19.0f;
-float rotationSpeed = 0.0005f; // radians per frame
-int width = 1980, height = 1020;
-int centerX = width/2, centerY = height/2;
-int mapX = 8, mapY = 8, mapS = height/mapY; // mapS: size of each square
+int mapS; // mapS: size of each square
 bool showinfo;
 
-int map[8][8] = {
-	{1, 1, 1, 1, 1, 1, 1, 1},
-	{1, 0, 0, 0, 0, 0, 0, 1},
-	{1, 0, 0, 0, 0, 1, 0, 1},
-	{1, 0, 0, 0, 0, 1, 0, 1},
-	{1, 0, 1, 1, 0, 1, 0, 1},
-	{1, 0, 0, 0, 0, 1, 0, 1},
-	{1, 0, 0, 0, 0, 0, 0, 1},
-	{1, 1, 1, 1, 1, 1, 1, 1},
-};
 
 void drawPlayer(){
     glColor3f(1,1,0); // 设置颜色为黄色
@@ -365,16 +355,21 @@ void timerFunc(int value) {
 void init(){
     width = glutGet(GLUT_SCREEN_WIDTH);
     height = glutGet(GLUT_SCREEN_HEIGHT);
+    centerX = width/2; 
+    centerY = height/2;
+    mapS = height / mapY;
+    moveSpeed = 0.1 * mapS;
+    mouseDeltaX = 0;
+    showinfo = 0;
+    px = mapS * ( initX - 0.5f);  //initial position
+    py = mapS * ( initY - 0.5f); 
+    pa = 0;   
+    pdx = cos(pa) * moveSpeed; 
+    pdy = sin(pa) * moveSpeed;     //initial angle
+	memset(keystate, 0, sizeof(keystate)); // initialise keystate as array of 0
 
     glClearColor(0.3,0.3,0.3,0);   //设置清屏颜色为灰色 [0黑， 1白]
     gluOrtho2D(0,width,height,0);     //设定而为正交投影坐标系
-    showinfo = 0;
-    px = 300; 
-    py = 300; 
-    pa = 0;   //玩家初始位置出现了
-    pdx = cos(pa) * moveSpeed; 
-    pdy = sin(pa) * moveSpeed;     //初始的方向指向
-	memset(keystate, 0, sizeof(keystate)); // initialise keystate as array of 0
 }
 
 int main(int argc, char* argv[]){
