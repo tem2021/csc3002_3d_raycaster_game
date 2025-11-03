@@ -125,6 +125,7 @@ void drawRays2D(){
     int numberofRays = (int)(width * 0.5); //half of the screen shows 3d view
     float fov = 60.0f; // field of view 
     float rayStep = (fov * DR) / numberofRays;
+    float epsilon = mapS * 1e-5f;
 
     ra = pa - (fov * DR / 2);
     for (int r = 0; r < numberofRays; r++){
@@ -138,13 +139,13 @@ void drawRays2D(){
         dof = 0;    // depth of field，显示射线步进的最大次数
         float disH = 1e5, hx = px, hy = py;
         if (ra > PI) {      // 顺时针，朝上是ra > PI的情况
-            ry = (((int) py / mapS ) * mapS) - 1e-3f ; 
+            ry = (((int) py / mapS ) * mapS) - epsilon ; 
             rx = (ry - py) * 1/tan(ra) + px; 
             yo = - mapS;      // y 方向的步长(注意格子大小是64)
             xo = yo * 1/tan(ra);     // x方向的步长
         } 
         if (ra < PI) {
-            ry = (((int) py / mapS ) * mapS) + mapS + 1e-3f; 
+            ry = (((int) py / mapS ) * mapS) + mapS + epsilon; 
             rx = (ry - py) * 1/tan(ra) + px; 
             yo = mapS; 
             xo = yo * 1/tan(ra);
@@ -173,13 +174,13 @@ void drawRays2D(){
         dof = 0;   
         float disV = 1e5, vx = px, vy = py;
         if (ra > PI/2 && ra < PI/2*3 ) {      
-            rx = (((int) px / mapS) * mapS) - 1e-3 ;   
+            rx = (((int) px / mapS) * mapS) - epsilon ;   
             ry = (rx - px) * tan(ra) + py; 
             xo = - mapS;     
             yo = xo * tan(ra);     
         } 
         if (ra < PI/2 || ra > PI/2*3) {
-            rx = (((int) px / mapS) * mapS) + mapS + 1e-3; 
+            rx = (((int) px / mapS) * mapS) + mapS + epsilon; 
             ry = (rx - px) * tan(ra) + py; 
             xo = mapS; 
             yo = xo * tan(ra);
