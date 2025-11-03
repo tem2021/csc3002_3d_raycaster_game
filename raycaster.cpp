@@ -122,8 +122,12 @@ void drawMap2D(){
 void drawRays2D(){
     int mx, my, dof; 
     float rx, ry, ra, xo, yo, disT;
-    ra = pa - DR * 30; 
-    for (int r = 0; r < 120; r++){
+    int numberofRays = (int)(width * 0.5); //half of the screen shows 3d view
+    float fov = 60.0f; // field of view 
+    float rayStep = (fov * DR) / numberofRays;
+
+    ra = pa - (fov * DR / 2);
+    for (int r = 0; r < numberofRays; r++){
         if (ra < 0) {
             ra += 2 * PI;
         }
@@ -148,16 +152,16 @@ void drawRays2D(){
         if ( fabs(ra) <= 1e-4 || fabs(ra-PI) <= 1e-4){
             rx = px;
             ry = py;
-            dof = 8;
+            dof = mapX;
         } 
-        while (dof < 8) {
+        while (dof < mapX) {
             mx = (int)(rx) / mapS;
             my = (int)(ry) / mapS;            
             if ( mx >= 0 && mx < mapX && my >= 0 && my < mapY && map[my][mx] == 1) {
                 hx = rx;
                 hy = ry;
                 disH = dist(px, py, hx, hy, ra);
-                dof = 8;
+                dof = mapX;
             } else {
                 rx += xo;
                 ry += yo;
@@ -183,13 +187,13 @@ void drawRays2D(){
         if ( fabs(ra - PI/2) <= 1e-4 || fabs(ra-PI/2*3) <= 1e-4){
             rx = px;
             ry = py;
-            dof = 8;
+            dof = mapY;
         } 
-        while (dof < 8) {
+        while (dof < mapY) {
             mx = (int)(rx) / mapS;
             my = (int)(ry) / mapS;            
             if ( mx >= 0 && mx < mapX && my >= 0 && my < mapY && map[my][mx] == 1) {
-                dof = 8;
+                dof = mapY;
                 vx = rx;
                 vy = ry;
                 disV = dist(px, py, vx, vy, ra);
@@ -217,17 +221,17 @@ void drawRays2D(){
         }
         disT = disT * cos(ca);
 
-        float wallScreenX = r * (width * 0.5f / 120) + width * 0.5f;
+        float wallScreenX = r * (width * 0.5f / numberofRays) + width * 0.5f;
         float lineH = mapS * height / disT; // 高度比例
         if (lineH > height) lineH = height;
         float lineO = (height * 1.0f / 2) - lineH/2;
 
-        glLineWidth(width * 0.03f); // 适配线宽
+        glLineWidth(1); // 适配线宽
         glBegin(GL_LINES);
         glVertex2f(wallScreenX, lineO);
         glVertex2f(wallScreenX, lineO + lineH);
         glEnd();
-        ra += DR/2;
+        ra += rayStep; // update the ray's angle
     }
 }
 
