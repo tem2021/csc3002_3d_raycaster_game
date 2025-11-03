@@ -19,6 +19,7 @@
     #include <GL/glu.h>
 #endif
 
+#include <stdlib.h>
 #include <math.h>
 #include <stdio.h>
 #include <stdbool.h>
@@ -30,9 +31,9 @@ const int EDGE_BUFFER = 10;
 
 float px, py, pdx, pdy, pa; // player position
 float mouseDeltaX = 0; // movement for mouse at each frame
-float moveSpeed = 8.0f;
-float rotationSpeed = 0.002f; // radians per frame
-int width = 1980, height = width/2;
+float moveSpeed = 19.0f;
+float rotationSpeed = 0.0005f; // radians per frame
+int width = 1980, height = 1020;
 int centerX = width/2, centerY = height/2;
 int mapX = 8, mapY = 8, mapS = height/mapY; // mapS: size of each square
 bool showinfo;
@@ -119,10 +120,29 @@ void drawMap2D(){
 	}	
 }
 
-void drawRays2D(){
+void drawCrosshair() {
+    float crossLengthY = height * 0.01f;
+    float crossLengthX = crossLengthY;
+    float crossWidth = crossLengthX * 0.2f;
+
+    glColor3f(1.0f, 1.0f, 1.0f); 
+    glLineWidth(crossWidth);
+
+    glBegin(GL_LINES);
+    glVertex2f(centerX - crossLengthX / 2, centerY);
+    glVertex2f(centerX + crossLengthX / 2, centerY);
+    glVertex2f(centerX, centerY - crossLengthY / 2);
+    glVertex2f(centerX, centerY + crossLengthY / 2);
+    glEnd();
+
+    glLineWidth(1.0f); 
+}
+
+void draw3Dview(){
     int mx, my, dof; 
     float rx, ry, ra, xo, yo, disT;
-    int numberofRays = (int)(width * 0.5); //half of the screen shows 3d view
+//    int numberofRays = (int)(width * 0.5); //half of the screen shows 3d view
+    int numberofRays = width;
     float fov = 60.0f; // field of view 
     float rayStep = (fov * DR) / numberofRays;
     float epsilon = mapS * 1e-5f;
@@ -206,11 +226,11 @@ void drawRays2D(){
         }
         if (disH < disV) { rx = hx; ry = hy; disT = disH; glColor3f(0.8,0.8,0.8);}
         if (disV < disH) { rx = vx; ry = vy; disT = disV; glColor3f(0.6, 0.6, 0.6);}
-        glLineWidth(1);
-        glBegin(GL_LINES);
-        glVertex2f(px,py);
-        glVertex2f(rx, ry);
-        glEnd();
+//        glLineWidth(1);
+//        glBegin(GL_LINES);
+//        glVertex2f(px,py);
+//        glVertex2f(rx, ry);
+//        glEnd();
 
         // Draw 3D Walls width * height
         float ca = pa - ra; 
@@ -222,7 +242,8 @@ void drawRays2D(){
         }
         disT = disT * cos(ca);
 
-        float wallScreenX = r * (width * 0.5f / numberofRays) + width * 0.5f;
+        //float wallScreenX = r * (width * 0.5f / numberofRays) + width * 0.5f;
+        float wallScreenX = r;
         float lineH = mapS * height / disT; // 高度比例
         if (lineH > height) lineH = height;
         float lineO = (height * 1.0f / 2) - lineH/2;
@@ -242,6 +263,8 @@ bool keystate[256];
 //unsigned 用来减少存储空间，增加代码可读性，表示这个变量不会出现负数
 void keyDown(unsigned char key, int x, int y) {
 	keystate[(unsigned char)key] = true;
+
+    if (key == 27) exit(0);
 }
 
 void keyUp(unsigned char key, int x, int y) {
@@ -325,9 +348,11 @@ void display(){
 
 	// render game state
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); //清除屏幕上的颜色缓冲区和深度缓冲区    
-	drawMap2D();    //先绘制地图
-    drawPlayer();   //绘制玩家
-    drawRays2D();   //初始化视野
+	//drawMap2D();    //先绘制地图
+    //drawPlayer();   //绘制玩家
+    //drawRays2D();   //初始化视野
+    draw3Dview();
+    drawCrosshair();
     infoList();
     glutSwapBuffers();  //交换前后缓冲区，显示渲染结果
 }
@@ -338,6 +363,9 @@ void timerFunc(int value) {
 }
 
 void init(){
+    width = glutGet(GLUT_SCREEN_WIDTH);
+    height = glutGet(GLUT_SCREEN_HEIGHT);
+
     glClearColor(0.3,0.3,0.3,0);   //设置清屏颜色为灰色 [0黑， 1白]
     gluOrtho2D(0,width,height,0);     //设定而为正交投影坐标系
     showinfo = 0;
@@ -349,20 +377,16 @@ void init(){
 	memset(keystate, 0, sizeof(keystate)); // initialise keystate as array of 0
 }
 
-void resize(int w, int h) {
-    glutReshapeWindow(width,height);
-}
-
 int main(int argc, char* argv[]){
     glutInit(&argc, argv);   // 初始化GLUT库，处理命令行参数
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB);   //设置显示模式,双缓冲+RGB颜色
-    glutInitWindowSize(width,height);    //设置窗口大小
-    glutInitWindowPosition(0, 0);
+    //glutInitWindowSize(width,height);    //设置窗口大小
+    //glutInitWindowPosition(0, 0);
+    //glutCreateWindow("Raycaster");   //创建标题为Raycaster的窗口
+    glutEnterGameMode();
 
-    glutCreateWindow("Raycaster");   //创建标题为Raycaster的窗口
     init();     //调用用户自定义初始化函数，设置背景色和坐标系等
     glutDisplayFunc(display);     //注册display函数为显示事件回调，每次刷新时调用display()
-    glutReshapeFunc(resize);
     glutSetCursor(GLUT_CURSOR_NONE);
     
     // user input
