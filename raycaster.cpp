@@ -243,6 +243,35 @@ void draw3Dview(){
         glVertex2f(wallScreenX, lineO);
         glVertex2f(wallScreenX, lineO + lineH);
         glEnd();
+
+        //draw ground 
+        float floorStart = lineO + lineH; 
+        if (floorStart < height * 1.0f/2) floorStart = height * 1.0f /2; 
+
+        float maxFloorDist = mapS * 10.0f; 
+        float floorBrightness = 1.0f - (disT / maxFloorDist); 
+        if (floorBrightness < 0.15f) floorBrightness = 0.15f; 
+        if (floorBrightness > 1.0f ) floorBrightness = 1.0f; 
+
+        glColor3f(floorBrightness * 0.3f, floorBrightness * 0.3f, floorBrightness * 0.3f); 
+
+        glBegin(GL_LINES);
+        glVertex2f(wallScreenX, floorStart);
+        glColor3f(0.0f,0.0f,0.0f);
+        glVertex2f(wallScreenX, height);
+        glEnd();
+    
+        //draw ceil 
+        float ceilingEnd = lineO; 
+        if (ceilingEnd > height * 1.0f/2) ceilingEnd = height * 1.0f /2; 
+        float ceilingBrightness = floorBrightness * 0.5f; 
+        glColor3f(ceilingBrightness * 0.2f, ceilingBrightness * 0.2f, ceilingBrightness * 0.2f);
+
+        glBegin(GL_LINES);
+        glVertex2f(wallScreenX, 0);
+        glVertex2f(wallScreenX, ceilingEnd);
+        glEnd();
+
         ra += rayStep; // update the ray's angle
     }
 }
