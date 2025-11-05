@@ -1,0 +1,1 @@
+- Using the raycaster algorithm, if we set the resolution to be large enough, you can notice as the player moved down the map, there is a clear gap between the casting ray and the wall (if you looks down or right) or a clear overlaps between the casting ray and the wall (if you looks up or left)

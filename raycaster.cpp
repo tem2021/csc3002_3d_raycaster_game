@@ -1,5 +1,7 @@
 //https://www.youtube.com/watch?v=gYRrGTC7GtA
 
+#include <GL/freeglut_std.h>
+#include <cmath>
 #ifdef _WIN32
 	// Windows (MinGW or Visual Studio with FreeGLUT)
 	#include <GL/freeglut.h>
@@ -17,15 +19,25 @@
     #include <GL/glu.h>
 #endif
 
+#include <stdlib.h>
 #include <math.h>
 #include <stdio.h>
 #include <stdbool.h>
 #include <string.h> // for memset
-#define PI 3.1415926535
-#define DR 0.0174533    //one degree in radians
 
-float px, py, pdx, pdy, pa; //player position
+#include "data.h"
+                    
+const float PI = 3.1415926535;
+const float DR = 0.0174533;   // one degree in radians
+const float rotationSpeed = 0.0005f; // radians per frame
+
+float moveSpeed;
+int width, height, centerX, centerY;
+float mouseDeltaX; // movement for mouse at each frame
+float px, py, pdx, pdy, pa; // player position
+int mapS; // mapS: size of each square
 bool showinfo;
+
 
 void drawPlayer(){
     glColor3f(1,1,0); // 设置颜色为黄色
@@ -37,7 +49,7 @@ void drawPlayer(){
     glLineWidth(3);
     glBegin(GL_LINES);
     glVertex2i(px, py);
-    glVertex2i(px + pdx * 5, py + pdy * 5);
+    glVertex2i(px + pdx * moveSpeed, py + pdy * moveSpeed);
     glEnd();
 }
 
@@ -70,49 +82,63 @@ void infoList(){
     }
 }
 
-int mapX = 8, mapY = 8, mapS = 64;
-int map[8][8] = {
-	{1, 1, 1, 1, 1, 1, 1, 1},
-	{1, 0, 0, 0, 0, 0, 0, 1},
-	{1, 0, 1, 1, 0, 1, 0, 1},
-	{1, 0, 0, 0, 0, 1, 0, 1},
-	{1, 0, 1, 1, 0, 1, 0, 1},
-	{1, 0, 0, 0, 0, 1, 0, 1},
-	{1, 0, 0, 0, 0, 0, 0, 1},
-	{1, 1, 1, 1, 1, 1, 1, 1},
-};
-
 float dist(float ax, float ay, float bx, float by, float ang) {
     return ( sqrtf((bx - ax)*(bx - ax) + (by - ay) * (by - ay)));
 }
 
 void drawMap2D(){
-	int x, y, xo, yo;
-	for (y = 0; y < mapY; y++) {
-		for (x = 0; x < mapX; x++) {
-			if (map[y][x] == 1){
-				glColor3f(1,1,1);
-			}
-			else {
-				glColor3f(0,0,0);
-			}
-			xo=x*mapS; 
-			yo=y*mapS;
-			glBegin(GL_QUADS); //开始绘制四边形
-			glVertex2i(xo + 1, yo + 1);
-			glVertex2i(xo + 1, yo + mapS - 1);
-			glVertex2i(xo + mapS - 1, yo + mapS -1);
-			glVertex2i(xo + mapS - 1, yo + 1);
-			glEnd();
+    int mapPixelWidth = mapX * mapS; 
+    int mapPixelHeight = mapY * mapS; 
+    float scaleX = width * 0.5f / mapPixelWidth; 
+    float scaleY = height * 1.0f / mapPixelHeight;
+
+	for (int y = 0; y < mapY; y++) {
+		for (int x = 0; x < mapX; x++) {
+			if (map[y][x] == 1) glColor3f(1,1,1);
+			else glColor3f(0,0,0);
+
+			int xo = (int)(x * mapS * scaleX); 
+            int yo = (int)(y * mapS * scaleY);
+
+            glBegin(GL_QUADS);
+            glVertex2i(xo + 1, yo + 1);
+            glVertex2i(xo + 1, yo + (int)(mapS * scaleY) - 1);
+            glVertex2i(xo + (int)(mapS * scaleX) - 1, yo + (int)(mapS * scaleY) -1);
+            glVertex2i(xo + (int)(mapS * scaleX) - 1, yo + 1);
+            glEnd();
 		}
 	}	
 }
 
-void drawRays2D(){
+void drawCrosshair() {
+    float crossLengthY = height * 0.01f;
+    float crossLengthX = crossLengthY;
+    float crossWidth = crossLengthX * 0.2f;
+
+    glColor3f(1.0f, 1.0f, 1.0f); 
+    glLineWidth(crossWidth);
+
+    glBegin(GL_LINES);
+    glVertex2f(centerX - crossLengthX / 2, centerY);
+    glVertex2f(centerX + crossLengthX / 2, centerY);
+    glVertex2f(centerX, centerY - crossLengthY / 2);
+    glVertex2f(centerX, centerY + crossLengthY / 2);
+    glEnd();
+
+    glLineWidth(1.0f); 
+}
+
+void draw3Dview(){
     int mx, my, dof; 
     float rx, ry, ra, xo, yo, disT;
-    ra = pa - DR * 30; 
-    for (int r = 0; r < 120; r++){
+//    int numberofRays = (int)(width * 0.5); //half of the screen shows 3d view
+    int numberofRays = width;
+    float fov = 60.0f; // field of view 
+    float rayStep = (fov * DR) / numberofRays;
+    float epsilon = mapS * 1e-5f;
+
+    ra = pa - (fov * DR / 2);
+    for (int r = 0; r < numberofRays; r++){
         if (ra < 0) {
             ra += 2 * PI;
         }
@@ -123,32 +149,31 @@ void drawRays2D(){
         dof = 0;    // depth of field，显示射线步进的最大次数
         float disH = 1e5, hx = px, hy = py;
         if (ra > PI) {      // 顺时针，朝上是ra > PI的情况
-            ry = (((int) py >> 6 ) << 6) - 1e-3 ;   // （int)py >> 6 表示把py先取整，接下来舍去低的6位，这相当于在十进制中除以64并且取整。((int) py >> 6 ) << 6 的作用其实就是再乘64得到最终的y坐标
+            ry = (((int) py / mapS ) * mapS) - epsilon ; 
             rx = (ry - py) * 1/tan(ra) + px; 
-            yo = - 64;      // y 方向的步长(注意格子大小是64)
+            yo = - mapS;      // y 方向的步长(注意格子大小是64)
             xo = yo * 1/tan(ra);     // x方向的步长
         } 
         if (ra < PI) {
-            ry = (((int) py >> 6 ) << 6) + 64 + 1e-3; 
+            ry = (((int) py / mapS ) * mapS) + mapS + epsilon; 
             rx = (ry - py) * 1/tan(ra) + px; 
-            yo = 64; 
+            yo = mapS; 
             xo = yo * 1/tan(ra);
         } 
         if ( fabs(ra) <= 1e-4 || fabs(ra-PI) <= 1e-4){
             rx = px;
             ry = py;
-            dof = 8;
+            dof = mapX;
         } 
-        while (dof < 8) {
-            mx = (int)(rx) >> 6;
-            my = (int)(ry) >> 6;            
+        while (dof < mapX) {
+            mx = (int)(rx) / mapS;
+            my = (int)(ry) / mapS;            
             if ( mx >= 0 && mx < mapX && my >= 0 && my < mapY && map[my][mx] == 1) {
                 hx = rx;
                 hy = ry;
                 disH = dist(px, py, hx, hy, ra);
-                dof = 8;
-            }
-			else {
+                dof = mapX;
+            } else {
                 rx += xo;
                 ry += yo;
                 dof +=1;
@@ -159,27 +184,27 @@ void drawRays2D(){
         dof = 0;   
         float disV = 1e5, vx = px, vy = py;
         if (ra > PI/2 && ra < PI/2*3 ) {      
-            rx = (((int) px >> 6 ) << 6) - 1e-3 ;   
+            rx = (((int) px / mapS) * mapS) - epsilon ;   
             ry = (rx - px) * tan(ra) + py; 
-            xo = - 64;     
+            xo = - mapS;     
             yo = xo * tan(ra);     
         } 
         if (ra < PI/2 || ra > PI/2*3) {
-            rx = (((int) px >> 6 ) << 6) + 64 + 1e-3; 
+            rx = (((int) px / mapS) * mapS) + mapS + epsilon; 
             ry = (rx - px) * tan(ra) + py; 
-            xo = 64; 
+            xo = mapS; 
             yo = xo * tan(ra);
         } 
         if ( fabs(ra - PI/2) <= 1e-4 || fabs(ra-PI/2*3) <= 1e-4){
             rx = px;
             ry = py;
-            dof = 8;
+            dof = mapY;
         } 
-        while (dof < 8) {
-            mx = (int)(rx) >> 6;
-            my = (int)(ry) >> 6;            
+        while (dof < mapY) {
+            mx = (int)(rx) / mapS;
+            my = (int)(ry) / mapS;            
             if ( mx >= 0 && mx < mapX && my >= 0 && my < mapY && map[my][mx] == 1) {
-                dof = 8;
+                dof = mapY;
                 vx = rx;
                 vy = ry;
                 disV = dist(px, py, vx, vy, ra);
@@ -191,12 +216,13 @@ void drawRays2D(){
         }
         if (disH < disV) { rx = hx; ry = hy; disT = disH; glColor3f(0.8,0.8,0.8);}
         if (disV < disH) { rx = vx; ry = vy; disT = disV; glColor3f(0.6, 0.6, 0.6);}
-        glLineWidth(1);
-        glBegin(GL_LINES);
-        glVertex2f(px,py);
-        glVertex2f(rx, ry);
-        glEnd();
-        // Draw 3D Walls 1024 * 512
+//        glLineWidth(1);
+//        glBegin(GL_LINES);
+//        glVertex2f(px,py);
+//        glVertex2f(rx, ry);
+//        glEnd();
+
+        // Draw 3D Walls width * height
         float ca = pa - ra; 
         if (ca < 0) {
             ca += 2 * PI;
@@ -205,17 +231,48 @@ void drawRays2D(){
             ca -= 2 * PI;
         }
         disT = disT * cos(ca);
-        float lineH = mapS * 512/disT; 
-        if (lineH > 512) {
-            lineH = 512;
-        }
-        float lineO = 256 - lineH/2;    //？也许调整之后有俯仰角
-        glLineWidth(4.5);
+
+        //float wallScreenX = r * (width * 0.5f / numberofRays) + width * 0.5f;
+        float wallScreenX = r;
+        float lineH = mapS * height / disT; // 高度比例
+        if (lineH > height) lineH = height;
+        float lineO = (height * 1.0f / 2) - lineH/2;
+
+        glLineWidth(1); // 适配线宽
         glBegin(GL_LINES);
-        glVertex2f(r*4.5 + 515, lineO);
-        glVertex2f(r*4.5 + 515, lineH + lineO);
+        glVertex2f(wallScreenX, lineO);
+        glVertex2f(wallScreenX, lineO + lineH);
         glEnd();
-        ra += DR/2;
+
+        //draw ground 
+        float floorStart = lineO + lineH; 
+        if (floorStart < height * 1.0f/2) floorStart = height * 1.0f /2; 
+
+        float maxFloorDist = mapS * 10.0f; 
+        float floorBrightness = 1.0f - (disT / maxFloorDist); 
+        if (floorBrightness < 0.15f) floorBrightness = 0.15f; 
+        if (floorBrightness > 1.0f ) floorBrightness = 1.0f; 
+
+        glColor3f(floorBrightness * 0.3f, floorBrightness * 0.3f, floorBrightness * 0.3f); 
+
+        glBegin(GL_LINES);
+        glVertex2f(wallScreenX, floorStart);
+        glColor3f(0.0f,0.0f,0.0f);
+        glVertex2f(wallScreenX, height);
+        glEnd();
+    
+        //draw ceil 
+        float ceilingEnd = lineO; 
+        if (ceilingEnd > height * 1.0f/2) ceilingEnd = height * 1.0f /2; 
+        float ceilingBrightness = floorBrightness * 0.5f; 
+        glColor3f(ceilingBrightness * 0.2f, ceilingBrightness * 0.2f, ceilingBrightness * 0.2f);
+
+        glBegin(GL_LINES);
+        glVertex2f(wallScreenX, 0);
+        glVertex2f(wallScreenX, ceilingEnd);
+        glEnd();
+
+        ra += rayStep; // update the ray's angle
     }
 }
 
@@ -225,6 +282,8 @@ bool keystate[256];
 //unsigned 用来减少存储空间，增加代码可读性，表示这个变量不会出现负数
 void keyDown(unsigned char key, int x, int y) {
 	keystate[(unsigned char)key] = true;
+
+    if (key == 27) exit(0);
 }
 
 void keyUp(unsigned char key, int x, int y) {
@@ -248,22 +307,24 @@ bool willCollide(float x, float y) {
 }
 
 
-void updatePlayer() {
-	const float rotationSpeed = 0.02f; // radians per frame
-	const float moveSpeed = 1.2f;
+void passiveMouseMove(int x, int y) {
+    if (x == centerX && y == centerY) return; 
+    mouseDeltaX += (x - centerX);
+    glutWarpPointer(centerX, centerY);
+}
 
-	if(keystate[(unsigned char)'a']){
-		pa -= rotationSpeed; 
-		if (pa < 0){ pa += 2*PI; } 
-		pdx = cos(pa) * moveSpeed; 
-		pdy = sin(pa) * moveSpeed;
-	}
-	if(keystate[(unsigned char)'d']){
-		pa += rotationSpeed; 
-		if (pa > 2 * PI){ pa -= 2*PI; } 
-		pdx = cos(pa) * moveSpeed; 
-		pdy = sin(pa) * moveSpeed;
-	}
+void mouseMove() {
+    if (mouseDeltaX != 0) {
+        pa += mouseDeltaX * rotationSpeed; 
+        if (pa < 0) pa += 2 * PI;
+        if (pa > 2 * PI) pa -= 2 * PI; 
+        pdx = cos(pa) * moveSpeed;
+        pdy = sin(pa) * moveSpeed;
+        mouseDeltaX = 0; 
+    }
+}
+
+void keyboardMove() {
 	if(keystate[(unsigned char)'w']){
 		float newX = px + pdx;
 		float newY = py + pdy;
@@ -280,18 +341,37 @@ void updatePlayer() {
 			py = newY;
 		}
 	}
+	if(keystate[(unsigned char)'d']){
+        float newX = px - sin(pa) * moveSpeed;
+        float newY = py + cos(pa) * moveSpeed; 
+		if (!willCollide(newX, newY)) {
+			px = newX;
+			py = newY;
+		}
+	}
+	if(keystate[(unsigned char)'a']){
+        float newX = px + sin(pa) * moveSpeed;
+        float newY = py - cos(pa) * moveSpeed; 
+		if (!willCollide(newX, newY)) {
+			px = newX;
+			py = newY;
+		}
+	}
 }
 
 //程序会把新一帧画面先画在后缓冲区，等画好后再一次性切换到前缓冲区里
 void display(){
 	// update game state
-	updatePlayer();
+	keyboardMove();
+    mouseMove();
 
 	// render game state
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); //清除屏幕上的颜色缓冲区和深度缓冲区    
-	drawMap2D();    //先绘制地图
-    drawPlayer();   //绘制玩家
-    drawRays2D();   //初始化视野
+	//drawMap2D();    //先绘制地图
+    //drawPlayer();   //绘制玩家
+    //drawRays2D();   //初始化视野
+    draw3Dview();
+    drawCrosshair();
     infoList();
     glutSwapBuffers();  //交换前后缓冲区，显示渲染结果
 }
@@ -302,38 +382,41 @@ void timerFunc(int value) {
 }
 
 void init(){
-    glClearColor(0.3,0.3,0.3,0);   //设置清屏颜色为灰色 [0黑， 1白]
-    gluOrtho2D(0,1024,512,0);     //设定而为正交投影坐标系
+    width = glutGet(GLUT_SCREEN_WIDTH);
+    height = glutGet(GLUT_SCREEN_HEIGHT);
+    centerX = width/2; 
+    centerY = height/2;
+    mapS = height / mapY;
+    moveSpeed = 0.1 * mapS;
+    mouseDeltaX = 0;
     showinfo = 0;
-    px = 300; py = 300; pa = 0;   //玩家初始位置出现了
-    pdx = cos(pa) * 5; pdy = sin(pa) * 5;     //初始的方向指向
+    px = mapS * ( initX - 0.5f);  //initial position
+    py = mapS * ( initY - 0.5f); 
+    pa = 0;   
+    pdx = cos(pa) * moveSpeed; 
+    pdy = sin(pa) * moveSpeed;     //initial angle
 	memset(keystate, 0, sizeof(keystate)); // initialise keystate as array of 0
-}
 
-/*** 
- C/C++的标准写法
- 1. int argc: 命令行参数的个数(argument count)
- 2. char* argv[]: 命令行参数的内容，是一个字符串数组，每一个元素都是一个参数
-    e.g. ./myapp hello world ==> argc = 3; argv[0] = ./myapp argv[1] = hello argv[2] = world
- 3. *指针，表示指向某个数据的地址
-    char* argv[] 里 char* 是一个字符型指针，指向字符串的地址
-    int* p 是整形指针，指向一个整数地址
- 4. &取地址，表示获取变量的内存地址
-    &argc 就是argc变量的地址，用于传给需要指针的函数
-    e.g. int a = 5; int* p = &a; *p = 20 (通过指针把a改成20)
-***/
+    glClearColor(0.3,0.3,0.3,0);   //设置清屏颜色为灰色 [0黑， 1白]
+    gluOrtho2D(0,width,height,0);     //设定而为正交投影坐标系
+}
 
 int main(int argc, char* argv[]){
     glutInit(&argc, argv);   // 初始化GLUT库，处理命令行参数
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB);   //设置显示模式,双缓冲+RGB颜色
-    glutInitWindowSize(1024,512);    //设置窗口大小
-    glutCreateWindow("Raycaster");   //创建标题为Raycaster的窗口
+    //glutInitWindowSize(width,height);    //设置窗口大小
+    //glutInitWindowPosition(0, 0);
+    //glutCreateWindow("Raycaster");   //创建标题为Raycaster的窗口
+    glutEnterGameMode();
+
     init();     //调用用户自定义初始化函数，设置背景色和坐标系等
     glutDisplayFunc(display);     //注册display函数为显示事件回调，每次刷新时调用display()
+    glutSetCursor(GLUT_CURSOR_NONE);
     
     // user input
 	glutKeyboardFunc(keyDown);
 	glutKeyboardUpFunc(keyUp);
+    glutPassiveMotionFunc(passiveMouseMove);
 	
 	glutTimerFunc(16, timerFunc, 0);
 	
