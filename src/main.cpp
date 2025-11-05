@@ -56,8 +56,10 @@ int main(int argc, char* argv[]) {
     // 创建游戏
     g_game = std::make_unique<Game>();
     
-    // 进入全屏模式
-    glutEnterGameMode();
+    // 进入全屏模式 (fullscreen)
+    // glutEnterGameMode();
+    glutInitWindowSize(1280, 720);
+    glutCreateWindow("Raycaster");
     
     // 初始化游戏
     g_game->init();
