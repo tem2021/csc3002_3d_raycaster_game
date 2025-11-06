@@ -1,0 +1,63 @@
+#include "entities/Player.h"
+#include "core/Config.h"
+#include <cmath>
+
+Player::Player(const Vec2& position, float angle, float moveSpeed)
+    : position_(position), angle_(angle), moveSpeed_(moveSpeed) {
+    updateDirection();
+}
+
+void Player::updateDirection() {
+    direction_.x = std::cos(angle_) * moveSpeed_;
+    direction_.y = std::sin(angle_) * moveSpeed_;
+}
+
+void Player::rotate(float deltaAngle) {
+    angle_ += deltaAngle;
+    
+    // Normalize the angle to [0, 2π]
+    while (angle_ < 0.0f) {
+        angle_ += Math::TWO_PI;
+    }
+    while (angle_ > Math::TWO_PI) {
+        angle_ -= Math::TWO_PI;
+    }
+    
+    updateDirection();
+}
+
+bool Player::willCollide(const Vec2& newPos, const Map& map) const {
+    int tileSize = map.getTileSize();
+    int mapX = static_cast<int>(newPos.x) / tileSize;
+    int mapY = static_cast<int>(newPos.y) / tileSize;
+    
+    return map.isWall(mapX, mapY);
+}
+
+void Player::tryMove(const Vec2& delta, const Map& map) {
+    Vec2 newPos = position_ + delta;
+    
+    if (!willCollide(newPos, map)) {
+        position_ = newPos;
+    }
+}
+
+void Player::moveForward(const Map& map) {
+    tryMove(direction_, map);
+}
+
+void Player::moveBackward(const Map& map) {
+    tryMove(direction_ * -1.0f, map);
+}
+
+void Player::strafeLeft(const Map& map) {
+    Vec2 strafeDir{std::sin(angle_) * moveSpeed_, 
+                   -std::cos(angle_) * moveSpeed_};
+    tryMove(strafeDir, map);
+}
+
+void Player::strafeRight(const Map& map) {
+    Vec2 strafeDir{-std::sin(angle_) * moveSpeed_, 
+                   std::cos(angle_) * moveSpeed_};
+    tryMove(strafeDir, map);
+}

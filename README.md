@@ -57,3 +57,4 @@ i = toggle debug info
 - [@tem2021](https://github.com/tem2021) - Map design team
 - [@prae-mai](https://github.com/prae-mai) - Map design team
 - [@Julia047](https://github.com/Julia047) - Enemy design team
+- [@QianBeiDeWangBa2157](https://github.com/QianBeiDeWangBa2157) - Weapon design team

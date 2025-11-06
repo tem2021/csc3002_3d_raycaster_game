@@ -1,22 +1,37 @@
-OS_NAME = ${shell uname -s}
-SRC = raycaster.cpp
-TARGET = raycaster
+CXX = g++
+CXXFLAGS = -std=c++17 -Wall -Wextra -Iinclude 
+LDFLAGS = -lGL -lGLU -lglut
 
-# Default: Linux
-LIBS = -lGL -lGLU -lglut -lm
+# check the operating system
+UNAME_S := $(shell uname -s)
+ifeq ($(UNAME_S),Darwin)
+    LDFLAGS = -framework OpenGL -framework GLUT
+endif
 
-# macOS
-ifeq (${OS_NAME}, Darwin) 
-	LIBS = -framework OpenGL -framework GLUT -lm 
-endif 
+SRC_DIR = src
+OBJ_DIR = obj
+BIN_DIR = bin
 
-# windows
-ifeq (${OS_NAME}, Windows_NT) 
-	LIBS = -lfreeglut -lopengl32 -lglut32 -lm 
-endif 
+SOURCES = $(shell find $(SRC_DIR) -name '*.cpp')
+OBJECTS = $(SOURCES:$(SRC_DIR)/%.cpp=$(OBJ_DIR)/%.o)
+TARGET = $(BIN_DIR)/raycaster
 
-${TARGET} : ${SRC}
-	gcc -Wall -g ${SRC} -o ${TARGET} ${LIBS}
+all: $(TARGET)
 
-clean: 
-	rm -f ${TARGET}
+$(TARGET): $(OBJECTS) | $(BIN_DIR)
+	$(CXX) $(OBJECTS) -o $@ $(LDFLAGS)
+
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp | $(OBJ_DIR)
+	@mkdir -p $(dir $@)
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+$(BIN_DIR) $(OBJ_DIR):
+	mkdir -p $@
+
+clean:
+	rm -rf $(OBJ_DIR) $(BIN_DIR)
+
+run: $(TARGET)
+	./$(TARGET)
+
+.PHONY: all clean run
