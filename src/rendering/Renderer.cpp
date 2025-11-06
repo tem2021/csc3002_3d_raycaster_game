@@ -36,7 +36,6 @@ void Renderer::draw3DView(const std::vector<RayHit>& rayHits,
         
         if (!hit.hit) continue;
         
-        // 计算鱼眼修正
         float rayAngle = player.getAngle() - (GameConfig::FOV * Math::DEG_TO_RAD / 2.0f) + 
                         (i * GameConfig::FOV * Math::DEG_TO_RAD / numRays);
         float ca = player.getAngle() - rayAngle;
@@ -45,10 +44,10 @@ void Renderer::draw3DView(const std::vector<RayHit>& rayHits,
         
         float correctedDist = hit.distance * std::cos(ca);
         
-        // 绘制墙壁、地板、天花板
+        // draw wall, ceil and ground
         drawWall(i, correctedDist, hit.isVertical, map);
         
-        // 计算墙壁高度
+        // caculate the height of the wall
         float lineH = map.getTileSize() * screenHeight_ / correctedDist;
         lineH = std::min(lineH, static_cast<float>(screenHeight_));
         float lineO = (screenHeight_ / 2.0f) - lineH / 2.0f;
@@ -92,7 +91,7 @@ void Renderer::drawFloor(int screenX, float wallBottom, float distance, const Ma
     glEnd();
 }
 
-void Renderer::drawCeiling(int screenX, float wallTop, float distance) {
+void Renderer::drawCeiling(int screenX, float wallTop, float) {
     float ceilingEnd = std::min(wallTop, static_cast<float>(screenHeight_) / 2.0f);
     
     float brightness = RenderConfig::CEILING_BRIGHTNESS * RenderConfig::MIN_BRIGHTNESS;

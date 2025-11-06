@@ -9,10 +9,10 @@ public:
     Player(const Vec2& position, float angle, float moveSpeed);
     
     // Movement
-    void moveForward(const Map& map);
-    void moveBackward(const Map& map);
-    void strafeLeft(const Map& map);
-    void strafeRight(const Map& map);
+    void moveForward(const Map& map, float speedMultiplier = 1.0f);
+    void moveBackward(const Map& map, float speedMultiplier = 1.0f);
+    void strafeLeft(const Map& map, float speedMultiplier = 1.0f);
+    void strafeRight(const Map& map, float speedMultiplier = 1.0f);
     void rotate(float deltaAngle);
     
     // Getters
