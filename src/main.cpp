@@ -32,17 +32,25 @@ void displayCallback() {
     }
 }
 
-void timerCallback(int value) {
+void timerCallback(int) {
     glutPostRedisplay();
     glutTimerFunc(GameConfig::FRAME_TIME_MS, timerCallback, 0);
 }
 
-void keyboardDownCallback(unsigned char key, int x, int y) {
+void keyboardDownCallback(unsigned char key, int, int) {
     g_game->getInputManager().handleKeyDown(key);
 }
 
-void keyboardUpCallback(unsigned char key, int x, int y) {
+void keyboardUpCallback(unsigned char key, int, int) {
     g_game->getInputManager().handleKeyUp(key);
+}
+
+void specialKeyDownCallback(int key, int, int) {
+    g_game->getInputManager().handleSpecialKeyDown(key);
+}
+
+void specialKeyUpCallback(int key, int, int ) {
+    g_game->getInputManager().handleSpecialKeyUp(key);
 }
 
 void mouseMotionCallback(int x, int y) {
@@ -83,6 +91,8 @@ int main(int argc, char* argv[]) {
     glutDisplayFunc(displayCallback);
     glutKeyboardFunc(keyboardDownCallback);
     glutKeyboardUpFunc(keyboardUpCallback);
+    glutSpecialFunc(specialKeyDownCallback);
+    glutSpecialUpFunc(specialKeyUpCallback);
     glutPassiveMotionFunc(mouseMotionCallback);
     glutTimerFunc(GameConfig::FRAME_TIME_MS, timerCallback, 0);
     

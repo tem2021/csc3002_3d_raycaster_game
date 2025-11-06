@@ -1,6 +1,7 @@
 #include "core/Game.h"
 #include "core/Config.h"
 #include "data/maps/level1.h"
+#include <GL/freeglut_std.h>
 
 #ifdef _WIN32
     #include <GL/freeglut.h>
@@ -13,11 +14,11 @@
 Game::Game() : screenWidth_(0), screenHeight_(0) {}
 
 void Game::init() {
-    // 获取屏幕尺寸
+    // gain the size of the screen
     screenWidth_ = glutGet(GLUT_SCREEN_WIDTH);
     screenHeight_ = glutGet(GLUT_SCREEN_HEIGHT);
     
-    // 创建地图
+    // create the map
     int tileSize = screenHeight_ / MapData::LEVEL1_HEIGHT;
     map_ = std::make_unique<Map>(
         MapData::LEVEL1,
@@ -28,21 +29,21 @@ void Game::init() {
         tileSize
     );
     
-    // 创建玩家
+    // create the player
     float moveSpeed = GameConfig::MOVE_SPEED_FACTOR * tileSize;
     player_ = std::make_unique<Player>(
         map_->getInitPosition(),
-        0.0f,  // 初始角度
+        0.0f,  // initial angle
         moveSpeed
     );
     
-    // 创建光线投射器
+    // create the raycaster instance
     raycaster_ = std::make_unique<Raycaster>(*map_);
     
-    // 创建渲染器
+    // create the renderer instance
     renderer_ = std::make_unique<Renderer>(screenWidth_, screenHeight_);
     
-    // 创建输入管理器
+    // create the inputManager instance
     inputManager_ = std::make_unique<InputManager>(
         screenWidth_ / 2,
         screenHeight_ / 2
@@ -54,21 +55,24 @@ void Game::handleInput() {
 }
 
 void Game::processPlayerInput() {
-    // 处理键盘移动
-    if (inputManager_->isKeyPressed('w') || inputManager_->isKeyPressed('W')) {
-        player_->moveForward(*map_);
+    // whether press shift, use the multiplier on Config.h
+    float speedMultiplier = inputManager_->isSprintPressed() ? GameConfig::SPRINT_MULTIPLIER : 1.0f;
+
+    // deal with the keyboard movement
+    if (inputManager_->isKeyPressed('w')) {
+        player_->moveForward(*map_, speedMultiplier);
     }
-    if (inputManager_->isKeyPressed('s') || inputManager_->isKeyPressed('S')) {
-        player_->moveBackward(*map_);
+    if (inputManager_->isKeyPressed('s')) {
+        player_->moveBackward(*map_, speedMultiplier);
     }
-    if (inputManager_->isKeyPressed('a') || inputManager_->isKeyPressed('A')) {
-        player_->strafeLeft(*map_);
+    if (inputManager_->isKeyPressed('a')) {
+        player_->strafeLeft(*map_, speedMultiplier);
     }
-    if (inputManager_->isKeyPressed('d') || inputManager_->isKeyPressed('D')) {
-        player_->strafeRight(*map_);
+    if (inputManager_->isKeyPressed('d')) {
+        player_->strafeRight(*map_, speedMultiplier);
     }
     
-    // 处理鼠标旋转
+    // deal with the mouse rotation
     float mouseDelta = inputManager_->consumeMouseDelta();
     if (mouseDelta != 0.0f) {
         player_->rotate(mouseDelta * GameConfig::ROTATION_SPEED);
@@ -76,14 +80,14 @@ void Game::processPlayerInput() {
 }
 
 void Game::update() {
-    // 未来可以在这里添加游戏逻辑更新
-    // 例如：敌人AI、物理模拟等
+    // update the game logic in the future 
+    // e.g. enemy ai / weapons 
 }
 
 void Game::render() {
     renderer_->clear();
     
-    // 投射光线
+    // casting rays
     auto rayHits = raycaster_->castRays(
         player_->getPosition(),
         player_->getAngle(),
@@ -91,13 +95,13 @@ void Game::render() {
         screenWidth_
     );
     
-    // 渲染 3D 视图
+    // render 3d View
     renderer_->draw3DView(rayHits, *player_, *map_);
     
-    // 渲染准星
+    // render crosshair
     renderer_->drawCrosshair();
     
-    // 渲染调试信息
+    // render debug information
     renderer_->drawDebugInfo(*player_, inputManager_->shouldShowInfo());
     
     renderer_->present();

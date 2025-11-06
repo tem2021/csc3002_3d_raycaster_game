@@ -12,6 +12,7 @@ namespace Math {
 namespace GameConfig {
     constexpr float ROTATION_SPEED = 0.0005f;
     constexpr float MOVE_SPEED_FACTOR = 0.1f;
+    constexpr float SPRINT_MULTIPLIER = 2.0f;   // SPRINT_SPEED / MOVE_SPEED
     constexpr float FOV = 60.0f;
     constexpr int TARGET_FPS = 60;
     constexpr int FRAME_TIME_MS = 1000 / TARGET_FPS;

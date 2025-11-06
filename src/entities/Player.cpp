@@ -42,22 +42,22 @@ void Player::tryMove(const Vec2& delta, const Map& map) {
     }
 }
 
-void Player::moveForward(const Map& map) {
-    tryMove(direction_, map);
+void Player::moveForward(const Map& map, float speedMultiplier) {
+    tryMove(direction_ * speedMultiplier, map);
 }
 
-void Player::moveBackward(const Map& map) {
-    tryMove(direction_ * -1.0f, map);
+void Player::moveBackward(const Map& map, float speedMultiplier) {
+    tryMove(direction_ * -1.0f * speedMultiplier, map);
 }
 
-void Player::strafeLeft(const Map& map) {
-    Vec2 strafeDir{std::sin(angle_) * moveSpeed_, 
-                   -std::cos(angle_) * moveSpeed_};
+void Player::strafeLeft(const Map& map, float speedMultiplier) {
+    Vec2 strafeDir{std::sin(angle_) * moveSpeed_ * speedMultiplier, 
+                   -std::cos(angle_) * moveSpeed_ * speedMultiplier};
     tryMove(strafeDir, map);
 }
 
-void Player::strafeRight(const Map& map) {
-    Vec2 strafeDir{-std::sin(angle_) * moveSpeed_, 
-                   std::cos(angle_) * moveSpeed_};
+void Player::strafeRight(const Map& map, float speedMultiplier) {
+    Vec2 strafeDir{-std::sin(angle_) * moveSpeed_ * speedMultiplier, 
+                   std::cos(angle_) * moveSpeed_ * speedMultiplier};
     tryMove(strafeDir, map);
 }
