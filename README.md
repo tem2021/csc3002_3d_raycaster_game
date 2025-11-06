@@ -4,53 +4,20 @@ _A game where you feed hungry animals_
 
 ---
 
-## How to build (using command line)
+## How to run 
 
-You can simply use 
+use `make` to run build the game and `make run` to run the game or simply use `make run` 
+to run the game 
 
-```
-make 
-```
+use `make clean` to clean the executable files and object files.
 
-or
+## Game controls
 
-Windows:
+mouse: vision control
 
-```
-gcc raycaster.cpp -o raycaster -lfreeglut -lopengl32 -lglu32 -lm
+wasd: player movement
 
-./raycaster
-```
-
-MacOS:
-
-```
-clang raycaster.cpp -o raycaster -framework OpenGL -framework GLUT -lm
-
-./raycaster
-```
-
-Linux: 
-
-```
-gcc raycaster.cpp -o raycaster -lGL -lGLU -lglut -lm
-
-./raycaster
-```
-
-If you're using VS Code (haven't tested other apps), you should be able to just press run and it will compile and run the raycaster.
-
-## Keyboard controls
-
-a = turn left
-
-d = turn right
-
-w = move forward
-
-s = move backward
-
-i = toggle debug info
+i: toggle debug info
 
 ## Credits
 
