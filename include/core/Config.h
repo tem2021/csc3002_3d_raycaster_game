@@ -15,6 +15,8 @@ namespace GameConfig {
     constexpr float FOV = 60.0f;
     constexpr int TARGET_FPS = 60;
     constexpr int FRAME_TIME_MS = 1000 / TARGET_FPS;
+    constexpr int WINDOW_WIDTH = 1280;
+    constexpr int WINDOW_HEIGHT = 720;
 }
 
 namespace RenderConfig {

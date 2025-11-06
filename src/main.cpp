@@ -1,3 +1,4 @@
+#include <GL/freeglut_std.h>
 #ifdef _WIN32
     #include <GL/freeglut.h>
     #include <GL/gl.h>
@@ -17,10 +18,10 @@
 #include <memory>
 #include <cstdlib>
 
-// 全局游戏实例（用于 GLUT 回调）
+// Unique Global Game Instance
 std::unique_ptr<Game> g_game;
 
-// GLUT 回调函数
+// GLUT Callback Function
 void displayCallback() {
     g_game->handleInput();
     g_game->update();
@@ -49,38 +50,43 @@ void mouseMotionCallback(int x, int y) {
 }
 
 int main(int argc, char* argv[]) {
-    // 初始化 GLUT
+    // Initialize GLUT
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
     
-    // 创建游戏
+    // Create the Game
     g_game = std::make_unique<Game>();
     
-    // 进入全屏模式 (fullscreen)
+    // Enter the Fullscreen Game
     // glutEnterGameMode();
-    glutInitWindowSize(1280, 720);
+
+    // Enter the Window Game
+    glutInitWindowSize(GameConfig::WINDOW_WIDTH, GameConfig::WINDOW_HEIGHT);
     glutCreateWindow("Raycaster");
     
-    // 初始化游戏
+    // Initialize the Game
     g_game->init();
+
+    // Ignore Key Repeat 
+    glutIgnoreKeyRepeat(1);
     
-    // 设置 OpenGL
+    // Set OpenGL
     int width = glutGet(GLUT_SCREEN_WIDTH);
     int height = glutGet(GLUT_SCREEN_HEIGHT);
     glClearColor(0.3f, 0.3f, 0.3f, 0.0f);
     gluOrtho2D(0, width, height, 0);
     
-    // 隐藏鼠标
+    // Hide Cursor
     glutSetCursor(GLUT_CURSOR_NONE);
     
-    // 注册回调
+    // Register Callback 
     glutDisplayFunc(displayCallback);
     glutKeyboardFunc(keyboardDownCallback);
     glutKeyboardUpFunc(keyboardUpCallback);
     glutPassiveMotionFunc(mouseMotionCallback);
     glutTimerFunc(GameConfig::FRAME_TIME_MS, timerCallback, 0);
     
-    // 进入主循环
+    // Enter the Main Loop
     glutMainLoop();
     
     return 0;
