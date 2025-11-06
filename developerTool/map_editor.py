@@ -6,6 +6,7 @@ import copy
 import os
 from pathlib import Path
 
+# The WIDTH and HEIGHT of the map are able to change here
 MAP_W, MAP_H = 64, 64
 CELL_SIZE = 12
 TOOLBAR_W = 100
@@ -18,21 +19,21 @@ player_pos = None
 undo_stack = []
 redo_stack = []
 show_help = False
-current_map_file = None  # 新增：当前编辑的地图文件
-available_maps = []  # 新增：可用的地图文件列表
-map_select_mode = False  # 新增：地图选择模式
-new_map_input_mode = False  # 新增：新地图输入模式
-new_map_name = ""  # 新增：新地图名称输入
+current_map_file = None 
+available_maps = []  
+map_select_mode = False  
+new_map_input_mode = False 
+new_map_name = ""  
 
 def scan_map_files(base_path="../include/data/maps"):
-    """扫描maps目录下的所有.h文件"""
+    """scan all map files under /include/data/maps"""
     maps = []
     try:
         maps_dir = Path(base_path)
         if maps_dir.exists():
             for file in maps_dir.glob("*.h"):
                 maps.append(str(file))
-        # 如果没有找到文件，尝试相对路径
+        # if not, try relative path
         if not maps:
             alt_path = Path("include/data/maps")
             if alt_path.exists():
@@ -44,14 +45,14 @@ def scan_map_files(base_path="../include/data/maps"):
     return sorted(maps) if maps else []
 
 def read_map_from_file(filename):
-    """读取新格式的地图文件 (level1.h格式)"""
+    """parse the map file (level1.h)"""
     global mapdata, player_pos, MAP_W, MAP_H, current_map_file
     try:
         with open(filename, "r", encoding="utf-8") as f:
             content = f.read()
         
-        # 解析命名空间和常量
-        # 匹配 constexpr int LEVEL1_WIDTH = 64;
+        # parse const & namespace
+        # match constexpr int LEVEL1_WIDTH = 64;
         width_match = re.search(r'constexpr\s+int\s+\w+_WIDTH\s+=\s+(\d+)', content)
         height_match = re.search(r'constexpr\s+int\s+\w+_HEIGHT\s+=\s+(\d+)', content)
         init_x_match = re.search(r'constexpr\s+int\s+\w+_INIT_X\s+=\s+(\d+)', content)
@@ -61,8 +62,8 @@ def read_map_from_file(filename):
             MAP_W = int(width_match.group(1))
             MAP_H = int(height_match.group(1))
         
-        # 解析地图数据
-        # 匹配 static int LEVEL1[LEVEL1_HEIGHT][LEVEL1_WIDTH] = { ... };
+        # parse map data
+        # match static int LEVEL1[LEVEL1_HEIGHT][LEVEL1_WIDTH] = { ... };
         map_array_match = re.search(r'static\s+int\s+\w+\[\w+_HEIGHT\]\[\w+_WIDTH\]\s+=\s+\{(.+?)\};', content, re.DOTALL)
         
         if map_array_match:
@@ -72,7 +73,7 @@ def read_map_from_file(filename):
             for row in rows:
                 mapdata.append([int(v) for v in row.split(',') if v.strip() != ''])
             
-            # 解析出生点
+            # parse spawn point
             if init_x_match and init_y_match:
                 player_pos = (int(init_x_match.group(1)), int(init_y_match.group(1)))
             else:
@@ -91,15 +92,15 @@ def read_map_from_file(filename):
         return False
 
 def create_new_map(map_name, width=64, height=64):
-    """创建一个新的空白地图"""
+    """creat a new map"""
     global mapdata, player_pos, MAP_W, MAP_H, current_map_file
     
-    # 确保地图名称合法
+    # ensure map name is valid
     if not map_name or not map_name.replace('_', '').isalnum():
         print("Invalid map name. Use only letters, numbers, and underscores.")
         return False
     
-    # 确保目录存在
+    # ensure the existence of /include/data/maps
     maps_dir = Path("../include/data/maps")
     if not maps_dir.exists():
         maps_dir = Path("include/data/maps")
@@ -110,28 +111,28 @@ def create_new_map(map_name, width=64, height=64):
         print(f"Error creating directory: {e}")
         return False
     
-    # 设置文件路径
+    # set the file location
     filename = maps_dir / f"{map_name}.h"
     
-    # 检查文件是否已存在
+    # check whether the file exists
     if filename.exists():
         print(f"Map file {filename} already exists!")
         return False
     
-    # 设置地图尺寸
+    # set the map size
     MAP_W = width
     MAP_H = height
     
-    # 创建空白地图（边缘是墙，中间是空白）
+    # create new map (with wall around)
     mapdata = [[1 if x == 0 or x == MAP_W-1 or y == 0 or y == MAP_H-1 else 0 for x in range(MAP_W)] for y in range(MAP_H)]
     
-    # 设置默认出生点
+    # set the default spawn point
     player_pos = (2, 2)
     
-    # 设置当前文件
+    # set the current map file
     current_map_file = str(filename)
     
-    # 立即保存新地图
+    # save the new map immediately
     export_map()
     
     print(f"Created new map: {filename}")
@@ -245,32 +246,31 @@ class Button:
                 self.active = True
 
 def export_map():
-    """导出地图到当前文件 (level1.h格式)"""
+    """export the current map"""
     global current_map_file
     
     if not current_map_file:
-        # 如果没有当前文件，默认保存到 level1.h
+        # if no current map, export the level1.h by default
         current_map_file = "../include/data/maps/level1.h"
-        # 确保目录存在
         os.makedirs(os.path.dirname(current_map_file), exist_ok=True)
     
-    # 从文件名提取级别名称 (例如 level1.h -> LEVEL1)
+    # extract the level name from the filename
     filename = os.path.basename(current_map_file)
     level_name = os.path.splitext(filename)[0].upper()
     
-    # 生成头文件内容
+    # create the header 
     code = f"#ifndef {level_name}_H\n"
     code += f"#define {level_name}_H\n\n"
     code += "namespace MapData {\n"
     code += f"    constexpr int {level_name}_WIDTH = {MAP_W};\n"
     code += f"    constexpr int {level_name}_HEIGHT = {MAP_H};\n"
     
-    # 添加出生点
+    # add the spawn point
     if player_pos:
         code += f"    constexpr int {level_name}_INIT_X = {player_pos[0]};\n"
         code += f"    constexpr int {level_name}_INIT_Y = {player_pos[1]};\n\n"
     else:
-        # 自动选择一个空白点作为出生点
+        # pick an arbitrary blank point as spawn point
         found = False
         for y in range(1, MAP_H-1):
             for x in range(1, MAP_W-1):
@@ -285,7 +285,7 @@ def export_map():
             code += f"    constexpr int {level_name}_INIT_X = 2;\n"
             code += f"    constexpr int {level_name}_INIT_Y = 2;\n\n"
     
-    # 添加地图数据
+    # add the map data
     code += f"    static int {level_name}[{level_name}_HEIGHT][{level_name}_WIDTH] = {{\n"
     for y in range(MAP_H):
         code += "        {" + ",".join(str(mapdata[y][x]) for x in range(MAP_W)) + "},\n"
@@ -337,7 +337,7 @@ def draw_toolbar():
     for b in extra_buttons: b.draw(screen)
 
 def draw_new_map_input():
-    """绘制新地图名称输入界面"""
+    """draw new map input window"""
     input_area = pygame.Rect(TOOLBAR_W, 0, WIDTH - TOOLBAR_W, HEIGHT)
     pygame.draw.rect(screen, (245, 245, 250), input_area)
     
@@ -348,28 +348,28 @@ def draw_new_map_input():
     y_offset = HEIGHT // 2 - 100
     x_margin = TOOLBAR_W + 50
     
-    # 标题
+    # head
     title = font_title.render("CREATE NEW MAP", True, (40, 40, 80))
     title_rect = title.get_rect(center=(TOOLBAR_W + (WIDTH - TOOLBAR_W) // 2, y_offset))
     screen.blit(title, title_rect)
     y_offset += 60
     
-    # 提示文本
+    # hint information
     prompt = font_text.render("Enter map name (e.g., level2, boss_room):", True, (60, 60, 60))
     screen.blit(prompt, (x_margin, y_offset))
     y_offset += 40
     
-    # 输入框
+    # input box
     input_box = pygame.Rect(x_margin, y_offset, 400, 40)
     pygame.draw.rect(screen, (255, 255, 255), input_box)
     pygame.draw.rect(screen, (100, 100, 150), input_box, 2)
     
-    # 显示输入的文本
+    # show the input text
     input_text = font_text.render(new_map_name + "_", True, (40, 40, 40))
     screen.blit(input_text, (x_margin + 10, y_offset + 10))
     y_offset += 60
     
-    # 提示信息
+    # hint information
     hint1 = font_small.render("Press ENTER to create", True, (100, 100, 100))
     hint2 = font_small.render("Press ESC to cancel", True, (100, 100, 100))
     hint3 = font_small.render("Use only letters, numbers, and underscores", True, (120, 120, 120))
@@ -378,7 +378,7 @@ def draw_new_map_input():
     screen.blit(hint3, (x_margin, y_offset + 50))
 
 def draw_map_selector():
-    """绘制地图选择界面"""
+    """draw the map selector window"""
     selector_area = pygame.Rect(TOOLBAR_W, 0, WIDTH - TOOLBAR_W, HEIGHT)
     pygame.draw.rect(screen, (245, 245, 250), selector_area)
     
@@ -389,12 +389,12 @@ def draw_map_selector():
     y_offset = 20
     x_margin = TOOLBAR_W + 20
     
-    # 标题
+    # head
     title = font_title.render("SELECT MAP TO EDIT", True, (40, 40, 80))
     screen.blit(title, (x_margin, y_offset))
     y_offset += 50
     
-    # 当前文件显示
+    # show current map file
     if current_map_file:
         current_text = font_small.render(f"Current: {os.path.basename(current_map_file)}", True, (100, 100, 100))
         screen.blit(current_text, (x_margin, y_offset))
@@ -404,7 +404,7 @@ def draw_map_selector():
         screen.blit(current_text, (x_margin, y_offset))
         y_offset += 30
     
-    # "创建新地图" 按钮
+    # "create new map" button
     new_map_button_rect = pygame.Rect(x_margin, y_offset, 400, 35)
     mouse_pos = pygame.mouse.get_pos()
     is_hover_new = new_map_button_rect.collidepoint(mouse_pos)
@@ -417,7 +417,7 @@ def draw_map_selector():
     new_map_text_rect = new_map_text.get_rect(center=new_map_button_rect.center)
     screen.blit(new_map_text, new_map_text_rect)
     
-    # 存储按钮以供点击检测
+    # store the map for detection
     if not hasattr(draw_map_selector, 'new_map_button'):
         draw_map_selector.new_map_button = new_map_button_rect
     else:
@@ -425,11 +425,11 @@ def draw_map_selector():
     
     y_offset += 50
     
-    # 分隔线
+    # split line
     pygame.draw.line(screen, (150, 150, 150), (x_margin, y_offset), (x_margin + 400, y_offset), 2)
     y_offset += 20
     
-    # 显示可用地图列表
+    # display the list of available maps
     if available_maps:
         existing_maps_title = font_text.render("Existing Maps:", True, (80, 80, 80))
         screen.blit(existing_maps_title, (x_margin, y_offset))
@@ -439,13 +439,10 @@ def draw_map_selector():
             map_name = os.path.basename(map_file)
             is_current = (map_file == current_map_file)
             
-            # 创建可点击区域
             button_rect = pygame.Rect(x_margin, y_offset, 400, 30)
-            
-            # 检查鼠标是否悬停
             is_hover = button_rect.collidepoint(mouse_pos)
             
-            # 绘制按钮背景
+            # button's background
             if is_current:
                 color = (180, 220, 180)
             elif is_hover:
@@ -456,14 +453,14 @@ def draw_map_selector():
             pygame.draw.rect(screen, color, button_rect)
             pygame.draw.rect(screen, (115, 115, 130), button_rect, 2)
             
-            # 绘制文本
+            # draw text
             text_color = (40, 100, 40) if is_current else (60, 60, 60)
             text = font_text.render(f"{i+1}. {map_name}", True, text_color)
             screen.blit(text, (x_margin + 10, y_offset + 7))
             
             y_offset += 35
             
-            # 存储按钮信息供点击检测
+            # store the button's information for detection
             if not hasattr(draw_map_selector, 'map_buttons'):
                 draw_map_selector.map_buttons = []
             if i >= len(draw_map_selector.map_buttons):
@@ -477,7 +474,7 @@ def draw_map_selector():
         hint_text = font_small.render("Click 'CREATE NEW MAP' to start", True, (100, 100, 100))
         screen.blit(hint_text, (x_margin, y_offset))
     
-    # 底部提示
+    # hint at button
     y_offset = HEIGHT - 60
     hint1 = font_small.render("Click on a map file to load it", True, (100, 100, 100))
     hint2 = font_small.render("Press Ctrl+L or click 'Load Map' to return", True, (100, 100, 100))
@@ -485,7 +482,7 @@ def draw_map_selector():
     screen.blit(hint2, (x_margin, y_offset + 20))
 
 def draw_help():
-    """绘制帮助文档"""
+    """draw help document"""
     help_area = pygame.Rect(TOOLBAR_W, 0, WIDTH - TOOLBAR_W, HEIGHT)
     pygame.draw.rect(screen, (245, 245, 250), help_area)
     
@@ -497,12 +494,12 @@ def draw_help():
     x_margin = TOOLBAR_W + 15
     line_spacing = 20
     
-    # 标题
+    # title
     title = font_title.render("MAP EDITOR - HELP", True, (40, 40, 80))
     screen.blit(title, (x_margin, y_offset))
     y_offset += 35
     
-    # 帮助内容
+    # help content
     help_content = [
         ("BASIC CONTROLS", [
             "Left Click: Draw/Erase based on current mode",
@@ -551,12 +548,12 @@ def draw_help():
     ]
     
     for section_title, items in help_content:
-        # 章节标题
+        # section title
         section_surf = font_section.render(section_title, True, (60, 60, 120))
         screen.blit(section_surf, (x_margin, y_offset))
         y_offset += line_spacing + 3
         
-        # 章节内容
+        # section content
         for item in items:
             text_surf = font_text.render(item, True, (50, 50, 50))
             screen.blit(text_surf, (x_margin + 10, y_offset))
@@ -564,7 +561,7 @@ def draw_help():
         
         y_offset += 8
     
-    # 底部提示
+    # bottom hint
     y_offset = HEIGHT - 25
     footer = font_text.render("Press 'H' or click Help button to return to editor", True, (100, 100, 100))
     footer_rect = footer.get_rect(center=(TOOLBAR_W + (WIDTH - TOOLBAR_W) // 2, y_offset))
@@ -813,10 +810,10 @@ def main():
     export_flash_time = 0
     load_flash_time = 0
 
-    # 扫描可用地图
+    # scan available maps
     available_maps = scan_map_files()
     
-    # 尝试加载第一个可用的地图，或创建新地图
+    # try to load the first available maps or create a new map
     if available_maps:
         read_map_from_file(available_maps[0])
     else:
@@ -826,12 +823,11 @@ def main():
     while running:
         screen.fill((0,0,0))
         
-        # 根据模式显示不同界面
         if new_map_input_mode:
             draw_new_map_input()
         elif map_select_mode:
             draw_map_selector()
-            draw_map_selector.map_buttons = []  # 重置按钮列表
+            draw_map_selector.map_buttons = []  # reset the button list
         elif show_help:
             draw_help()
         else:
@@ -839,14 +835,14 @@ def main():
             if tool == ELLIPSE_TOOL and ellipse_start and ellipse_end:
                 preview_ellipse(ellipse_start, ellipse_end, rect_mode)
 
-        # 工具栏始终显示
+        # show the tool bar
         pygame.draw.rect(screen, (230,230,240), (0, 0, TOOLBAR_W, HEIGHT))
         draw_toolbar()
 
         pygame.display.flip()
         now = pygame.time.get_ticks()
         
-        # 处理各种按钮的高亮效果超时
+        # deal with the highlight of the buttons
         if undo_flash_time and now > undo_flash_time:
             extra_buttons[2].flash = False
             undo_flash_time = 0
@@ -865,7 +861,7 @@ def main():
                 quit_editor()
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 if event.pos[0] < TOOLBAR_W:
-                    # 工具栏点击
+                    # click on tool bar
                     for idx, b in enumerate(extra_buttons):
                         if b.rect.collidepoint(event.pos):
                             if b.name == "Undo":
@@ -885,7 +881,7 @@ def main():
                                 b.active = show_help
                             elif b.name == "Load Map":
                                 map_select_mode = not map_select_mode
-                                available_maps = scan_map_files()  # 刷新列表
+                                available_maps = scan_map_files()  # update the list
                                 b.active = map_select_mode
                                 b.flash = True
                                 load_flash_time = now + 120
@@ -896,16 +892,15 @@ def main():
                     else:
                         handle_button_click(event.pos)
                 else:
-                    # 地图区域点击
+                    # click on the map area
                     if new_map_input_mode:
-                        pass  # 输入模式下不处理地图点击
+                        pass  
                     elif map_select_mode:
-                        # 地图选择模式
-                        # 检查是否点击了"创建新地图"按钮
+                        # check whether hit the new map button
                         if hasattr(draw_map_selector, 'new_map_button') and draw_map_selector.new_map_button.collidepoint(event.pos):
                             new_map_input_mode = True
                             new_map_name = ""
-                        # 检查是否点击了现有地图
+                        # check whether click on the available maps
                         elif hasattr(draw_map_selector, 'map_buttons'):
                             for button_rect, map_file in draw_map_selector.map_buttons:
                                 if button_rect.collidepoint(event.pos):
@@ -914,7 +909,7 @@ def main():
                                         extra_buttons[0].active = False
                                     break
                     elif not show_help:
-                        # 编辑模式
+                        # edit mode
                         x = (event.pos[0] - TOOLBAR_W) // CELL_SIZE
                         y = event.pos[1] // CELL_SIZE
                         x = clamp(x, 0, MAP_W-1)
@@ -1014,14 +1009,14 @@ def main():
                         dragging_ellipse = False
             elif event.type == pygame.KEYDOWN:
                 if new_map_input_mode:
-                    # 新地图输入模式的键盘处理
+                    # keyboard input for new map mode
                     if event.key == pygame.K_RETURN:
                         if new_map_name:
                             if create_new_map(new_map_name):
                                 new_map_input_mode = False
                                 map_select_mode = False
                                 extra_buttons[0].active = False
-                                available_maps = scan_map_files()  # 刷新地图列表
+                                available_maps = scan_map_files()  # update the map list
                             new_map_name = ""
                     elif event.key == pygame.K_ESCAPE:
                         new_map_input_mode = False
@@ -1029,12 +1024,12 @@ def main():
                     elif event.key == pygame.K_BACKSPACE:
                         new_map_name = new_map_name[:-1]
                     elif event.unicode.isalnum() or event.unicode == '_':
-                        if len(new_map_name) < 30:  # 限制长度
+                        if len(new_map_name) < 30:  # limit the map name
                             new_map_name += event.unicode
                 else:
-                    # 正常模式的键盘处理
+                    # keyboard for normal mode
                     if event.key == pygame.K_n and (pygame.key.get_mods() & pygame.KMOD_CTRL):
-                        # Ctrl+N 创建新地图
+                        # Ctrl+N to create new map
                         new_map_input_mode = True
                         new_map_name = ""
                     elif event.key == pygame.K_h:
@@ -1042,7 +1037,7 @@ def main():
                         extra_buttons[5].active = show_help
                     elif event.key == pygame.K_l and (pygame.key.get_mods() & pygame.KMOD_CTRL):
                         map_select_mode = not map_select_mode
-                        available_maps = scan_map_files()  # 刷新列表
+                        available_maps = scan_map_files()  
                         extra_buttons[0].active = map_select_mode
                         extra_buttons[0].flash = True
                         load_flash_time = now + 120
