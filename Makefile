@@ -1,5 +1,5 @@
 CXX = g++
-CXXFLAGS = -std=c++17 -Wall -Wextra -Iinclude 
+CXXFLAGS = -std=c++17 -Wall -Wextra -Iinclude -MMD -MP
 LDFLAGS = -lGL -lGLU -lglut
 
 # check the operating system
@@ -14,6 +14,7 @@ BIN_DIR = bin
 
 SOURCES = $(shell find $(SRC_DIR) -name '*.cpp')
 OBJECTS = $(SOURCES:$(SRC_DIR)/%.cpp=$(OBJ_DIR)/%.o)
+DEPENDS = $(OBJECTS:.o=.d)
 TARGET = $(BIN_DIR)/raycaster
 
 all: $(TARGET)
@@ -33,5 +34,7 @@ clean:
 
 run: $(TARGET)
 	./$(TARGET)
+
+-include $(DEPENDS)
 
 .PHONY: all clean run
