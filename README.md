@@ -6,8 +6,8 @@ _A game where you feed hungry animals_
 
 ## How to run 
 
-use `make` to run build the game and `make run` to run the game or simply use `make run` 
-to run the game 
+use `make` to build the game then `make run` to run the game or simply use `make run` 
+to build & run the game
 
 use `make clean` to clean the executable files and object files.
 
