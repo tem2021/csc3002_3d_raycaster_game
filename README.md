@@ -4,12 +4,19 @@ _A game where you feed hungry animals_
 
 ---
 
-## How to run 
+## How to run
 
-use `make` to build the game then `make run` to run the game or simply use `make run` 
-to build & run the game
+Install [CMake] (https://cmake.org/download/)
 
-use `make clean` to clean the executable files and object files.
+Create a folder called build in the root of the project folder, then change directory to the build folder
+
+Use ``cmake ..`` and then ``make`` and there will be an executable in the build folder
+
+To run from VS Code, install the CMake Tools extension
+
+CTRL + Shift + P and type ``CMake: Configure`` and choose a kit
+
+There should be a build button on the bottom bar. You can also build by CTRL + Shift + P and typing ``CMake: Build``
 
 ## Game controls
 
