@@ -4,3 +4,4 @@ raycaster.dSYM
 .DS_Store
 obj/
 bin/
+build/
