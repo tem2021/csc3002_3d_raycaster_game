@@ -1,3 +1,11 @@
+To use the map editor:
+
+Change directory to developerTool (folder where map_editor.py is) and run
+
+```bash
+python map_editor.py
+```
+
 For some reason putting a wall to the top left of the player (1 is wall 0 is air and p is player)
 
 100
