@@ -74,6 +74,9 @@ RayHit Raycaster::checkHorizontalIntersections(const Vec2& origin, float angle) 
             hit.hitPoint = Vec2{rx, ry};
             hit.distance = origin.distanceTo(hit.hitPoint);
             hit.isVertical = false;
+            hit.wallType = map_.getWallType(mx, my);
+            // 计算墙面碰撞的X坐标 (0.0-1.0)
+            hit.wallHitX = rx / mapS - std::floor(rx / mapS);
             break;
         }
         
@@ -118,6 +121,9 @@ RayHit Raycaster::checkVerticalIntersections(const Vec2& origin, float angle) co
             hit.hitPoint = Vec2{rx, ry};
             hit.distance = origin.distanceTo(hit.hitPoint);
             hit.isVertical = true;
+            hit.wallType = map_.getWallType(mx, my);
+            // 计算墙面碰撞的Y坐标 (0.0-1.0)
+            hit.wallHitX = ry / mapS - std::floor(ry / mapS);
             break;
         }
         

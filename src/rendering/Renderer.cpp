@@ -44,10 +44,10 @@ void Renderer::draw3DView(const std::vector<RayHit>& rayHits,
         
         float correctedDist = hit.distance * std::cos(ca);
         
-        // draw wall, ceil and ground
-        drawWall(i, correctedDist, hit.isVertical, map);
+        // draw wall with texture
+        drawWall(i, correctedDist, hit, map);
         
-        // caculate the height of the wall
+        // calculate wall height
         float lineH = map.getTileSize() * screenHeight_ / correctedDist;
         lineH = std::min(lineH, static_cast<float>(screenHeight_));
         float lineO = (screenHeight_ / 2.0f) - lineH / 2.0f;
@@ -57,22 +57,54 @@ void Renderer::draw3DView(const std::vector<RayHit>& rayHits,
     }
 }
 
-void Renderer::drawWall(int screenX, float distance, bool isVertical, const Map& map) {
+void Renderer::drawWall(int screenX, float distance, const RayHit& hit, const Map& map) {
     float lineH = map.getTileSize() * screenHeight_ / distance;
     lineH = std::min(lineH, static_cast<float>(screenHeight_));
     float lineO = (screenHeight_ / 2.0f) - lineH / 2.0f;
     
-    // set the color based on the direction of the wall
-    float brightness = isVertical ? 
-        RenderConfig::WALL_BRIGHTNESS_V : 
-        RenderConfig::WALL_BRIGHTNESS_H;
+    // Get texture for this wall type
+    GLuint texID = textureManager_.getTextureID(hit.wallType);
     
-    glColor3f(brightness, brightness, brightness);
-    glLineWidth(1.0f);
-    glBegin(GL_LINES);
-    glVertex2f(screenX, lineO);
-    glVertex2f(screenX, lineO + lineH);
-    glEnd();
+    if (texID > 0) {
+        // Draw textured wall
+        glEnable(GL_TEXTURE_2D);
+        glBindTexture(GL_TEXTURE_2D, texID);
+        
+        // Apply brightness based on wall orientation
+        float brightness = hit.isVertical ? 
+            RenderConfig::WALL_BRIGHTNESS_V : 
+            RenderConfig::WALL_BRIGHTNESS_H;
+        glColor3f(brightness, brightness, brightness);
+        
+        // Draw quad with texture coordinates
+        glBegin(GL_QUADS);
+        glTexCoord2f(hit.wallHitX, 0.0f); 
+        glVertex2f(screenX, lineO);
+        
+        glTexCoord2f(hit.wallHitX, 1.0f); 
+        glVertex2f(screenX, lineO + lineH);
+        
+        glTexCoord2f(hit.wallHitX, 1.0f); 
+        glVertex2f(screenX + 1, lineO + lineH);
+        
+        glTexCoord2f(hit.wallHitX, 0.0f); 
+        glVertex2f(screenX + 1, lineO);
+        glEnd();
+        
+        glDisable(GL_TEXTURE_2D);
+    } else {
+        // Fallback: draw colored wall if no texture
+        float brightness = hit.isVertical ? 
+            RenderConfig::WALL_BRIGHTNESS_V : 
+            RenderConfig::WALL_BRIGHTNESS_H;
+        
+        glColor3f(brightness, brightness, brightness);
+        glLineWidth(1.0f);
+        glBegin(GL_LINES);
+        glVertex2f(screenX, lineO);
+        glVertex2f(screenX, lineO + lineH);
+        glEnd();
+    }
 }
 
 void Renderer::drawFloor(int screenX, float wallBottom, float distance, const Map& map) {

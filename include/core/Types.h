@@ -3,7 +3,7 @@
 
 #include <cmath>
 
-// 二维向量
+// 2D Vectors
 struct Vec2 {
     float x = 0.0f;
     float y = 0.0f;
@@ -42,12 +42,14 @@ struct Vec2 {
     }
 };
 
-// 光线投射结果
+// Results of RayHit
 struct RayHit {
     bool hit = false;
     float distance = 0.0f;
     Vec2 hitPoint;
-    bool isVertical = false;  // 是否击中垂直墙面
+    bool isVertical = false;  // Whether hit the wall vertically
+    int wallType = 0;         // wallType 
+    float wallHitX = 0.0f;    // Hit place (0.0-1.0)
 };
 
 #endif // TYPES_H
