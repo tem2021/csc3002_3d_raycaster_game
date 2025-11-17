@@ -23,3 +23,10 @@ This seems to be the only affected block? Maybe it's due to where the player is 
 --- 
 
 Comment [Linzheng]: For this problem, I think it's because how we initialize the game based on the map (level1.h), I believe that is because some of the float point calculating problem. When we initialize the game, the player is generated inside the wall (i.e. 1) in your example instead of the original p place. I believe this is the reason. Let me check the code.
+
+# 2025-11-17
+Linzheng: For the Map Editor, if the texture files are too much, then the Map Editor can only show the first 48 textures I guess 
+
+---
+
+Comment [Linzheng]: I believe we won't meet such problem since our game don't need so many textures.

@@ -334,6 +334,33 @@ def export_png():
         print(f"Error exporting PNG: {e}")
         return False
 
+def export_both():
+    """Export both .h and .png files"""
+    global texture_data, texture_name
+    
+    if not texture_name:
+        print("Error: No texture name set. Please create a new texture first (Ctrl+N)")
+        return False
+    
+    # Export .h file first
+    h_success = export_texture()
+    
+    # Export PNG file
+    png_success = export_png()
+    
+    if h_success and png_success:
+        print(f"✓ Exported both {texture_name}.h and {texture_name}.png")
+        return True
+    elif h_success:
+        print(f"⚠ Exported .h but PNG export failed")
+        return False
+    elif png_success:
+        print(f"⚠ Exported PNG but .h export failed")
+        return False
+    else:
+        print(f"✗ Both exports failed")
+        return False
+
 def confirm_save_dialog():
     """Ask user to save current work before importing - using pygame dialog"""
     if not HAS_TKINTER:
@@ -894,14 +921,13 @@ tool_buttons = [
 extra_buttons = [
     Button("Create New", (10, 32+5*(BUTTON_H+6), TOOLBAR_W-20, BUTTON_H), 'extra', None),
     Button("Load .h", (10, 32+6*(BUTTON_H+6), TOOLBAR_W-20, BUTTON_H), 'extra', None),
-    Button("Export .h", (10, 32+7*(BUTTON_H+6), TOOLBAR_W-20, BUTTON_H), 'extra', None),
+    Button("Export", (10, 32+7*(BUTTON_H+6), TOOLBAR_W-20, BUTTON_H), 'extra', None),  # Combined export
     Button("Import PNG", (10, 32+8*(BUTTON_H+6), TOOLBAR_W-20, BUTTON_H), 'extra', None),
-    Button("Export PNG", (10, 32+9*(BUTTON_H+6), TOOLBAR_W-20, BUTTON_H), 'extra', None),
-    Button("Undo", (10, 32+10*(BUTTON_H+6), TOOLBAR_W-20, BUTTON_H), 'extra', None),
-    Button("Redo", (10, 32+11*(BUTTON_H+6), TOOLBAR_W-20, BUTTON_H), 'extra', None),
-    Button("Clear", (10, 32+12*(BUTTON_H+6), TOOLBAR_W-20, BUTTON_H), 'extra', None),
-    Button("Help", (10, 32+13*(BUTTON_H+6), TOOLBAR_W-20, BUTTON_H), 'extra', None),
-    Button("Quit", (10, 32+14*(BUTTON_H+6), TOOLBAR_W-20, BUTTON_H), 'extra', None),
+    Button("Undo", (10, 32+9*(BUTTON_H+6), TOOLBAR_W-20, BUTTON_H), 'extra', None),
+    Button("Redo", (10, 32+10*(BUTTON_H+6), TOOLBAR_W-20, BUTTON_H), 'extra', None),
+    Button("Clear", (10, 32+11*(BUTTON_H+6), TOOLBAR_W-20, BUTTON_H), 'extra', None),
+    Button("Help", (10, 32+12*(BUTTON_H+6), TOOLBAR_W-20, BUTTON_H), 'extra', None),
+    Button("Quit", (10, 32+13*(BUTTON_H+6), TOOLBAR_W-20, BUTTON_H), 'extra', None),
 ]
 
 mode_buttons[0].active = True
@@ -1291,8 +1317,7 @@ def draw_help():
             "P/L/R/E: Select tool",
             "Ctrl+N: Create new texture",
             "Ctrl+L: Load texture",
-            "Ctrl+E: Export texture (.h)",
-            "Ctrl+P: Export as PNG",
+            "Ctrl+E: Export (.h + PNG)",
             "Ctrl+I: Import PNG image",
             "U or Ctrl+Z: Undo",
             "Ctrl+Y: Redo",
@@ -1615,12 +1640,8 @@ def handle_button_click(pos, now, undo_time, redo_time, export_time, load_time, 
                 load_screen = False
                 b.flash = True
                 timers['create'] = now + 120
-            elif b.name == "Export .h":
-                if export_texture():
-                    b.flash = True
-                    timers['export'] = now + 120
-            elif b.name == "Export PNG":
-                if export_png():
+            elif b.name == "Export":
+                if export_both():
                     b.flash = True
                     timers['export'] = now + 120
             elif b.name == "Import PNG":
@@ -1695,8 +1716,7 @@ def main():
     print("  - Press 'H' for help")
     print("  - Press 'Ctrl+N' to create new texture")
     print("  - Press 'Ctrl+L' to load texture")
-    print("  - Press 'Ctrl+E' to export texture (.h)")
-    print("  - Press 'Ctrl+P' to export as PNG")
+    print("  - Press 'Ctrl+E' to export (.h + PNG)")
     print("  - Press 'Ctrl+I' to import PNG")
     print("="*50 + "\n")
     
@@ -1811,15 +1831,11 @@ def main():
                                 b.active = load_screen
                                 break
                     elif event.key == pygame.K_e and (pygame.key.get_mods() & pygame.KMOD_CTRL):
-                        # Ctrl+E: 导出
-                        if export_texture():
-                            # Flash Export .h button (index 2 in extra_buttons)
+                        # Ctrl+E: Export both .h and PNG
+                        if export_both():
+                            # Flash Export button (index 2 in extra_buttons)
                             extra_buttons[2].flash = True
                             export_flash_time = now + 120
-                    elif event.key == pygame.K_p and (pygame.key.get_mods() & pygame.KMOD_CTRL):
-                        # Ctrl+P: Export as PNG
-                        if export_png():
-                            print("✓ Exported as PNG")
                     elif event.key == pygame.K_i and (pygame.key.get_mods() & pygame.KMOD_CTRL):
                         # Ctrl+I: Import PNG
                         if import_png():
