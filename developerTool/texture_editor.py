@@ -274,9 +274,6 @@ def export_texture():
         print("Error: No texture name set. Please create a new texture first (Ctrl+N)")
         return False
     
-    # Debug: verify texture_data shape before export
-    print(f"DEBUG export_texture: texture_data.shape = {texture_data.shape}")
-    
     filename = os.path.basename(current_texture_file)
     tex_name = os.path.splitext(filename)[0].upper()
     
@@ -303,7 +300,6 @@ def export_texture():
         with open(current_texture_file, 'w', encoding='utf-8') as f:
             f.write(code)
         print(f"✓ Exported to {current_texture_file}")
-        print(f"DEBUG: Wrote {len(code.split(chr(10)))} lines to file")
         return True
     except Exception as e:
         print(f"Error exporting texture: {e}")
@@ -746,10 +742,6 @@ def import_png():
         # Convert resized image to numpy array and paste into texture_data
         img_array = np.array(img_resized, dtype=np.uint8)
         texture_data[paste_y:paste_y+new_h, paste_x:paste_x+new_w] = img_array
-        
-        # Verify shape before export
-        print(f"DEBUG: texture_data.shape = {texture_data.shape}")
-        assert texture_data.shape == (TEXTURE_SIZE, TEXTURE_SIZE, 3), f"Wrong shape: {texture_data.shape}"
         
         # Auto-name from PNG filename
         png_basename = Path(filepath).stem
