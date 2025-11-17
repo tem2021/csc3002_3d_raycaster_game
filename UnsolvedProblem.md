@@ -10,9 +10,11 @@ Comment [Linzheng]: I remove the 2D view and preserve the 3D view only.
 
 Praemai: For some reason putting a wall to the top left of the player (1 is wall 0 is air and p is player)
 
+```
 100
 0p0
 000
+```
 
 This makes the player unable to move but you can still look around using the mouse.
 
