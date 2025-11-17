@@ -31,7 +31,7 @@ python3 texture_editor.py  # Texture editor
 - `Ctrl+N`: Create new map
 - `Ctrl+L`: Load map
 - `Ctrl+E`: Export map
-- `Ctrl+Z`: Undo
+- `Ctrl+Z` or `U`: Undo
 - `Ctrl+Y`: Redo
 - `H`: Help
 - `Q`: Quit
@@ -64,12 +64,13 @@ python3 texture_editor.py  # Texture editor
 - `L`: Line tool
 - `R`: Rectangle tool (click again to toggle Fill/Border)
 - `E`: Ellipse tool (click again to toggle Fill/Border)
+- `I`: Eyedropper (pick color from canvas)
 - `Ctrl+N`: Create new texture
 - `Ctrl+L`: Load texture
 - `Ctrl+I`: Import PNG (custom file browser)
 - `Ctrl+E`: Export as .h (C++ header)
 - `Ctrl+P`: Export as PNG
-- `Ctrl+Z`: Undo
+- `Ctrl+Z` or `U`: Undo
 - `Ctrl+Y`: Redo
 - `H`: Help
 - `Q`: Quit
@@ -137,7 +138,7 @@ include/data/
 
 ## Tips
 - **Map Editor**: Set player spawn before exporting; border cells cannot be edited
-- **Texture Editor**: Import PNG auto-fills white background for non-square images; use eyedropper to sample colors
+- **Texture Editor**: Import PNG auto-fills white background for non-square images; press `I` to quickly pick colors
 - Both editors support Undo/Redo (up to 100 operations)
 - All dialogs use pygame (no external windows)
 - Export frequently to avoid losing work

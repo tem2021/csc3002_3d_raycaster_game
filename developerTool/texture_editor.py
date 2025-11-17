@@ -1829,10 +1829,19 @@ def main():
                         color_picker_mode = not color_picker_mode
                     elif event.key == pygame.K_u or (event.key == pygame.K_z and (pygame.key.get_mods() & pygame.KMOD_CTRL)):
                         undo()
+                        extra_buttons[5].flash = True
+                        undo_flash_time = now + 120
                     elif event.key == pygame.K_y and (pygame.key.get_mods() & pygame.KMOD_CTRL):
                         redo()
+                        extra_buttons[6].flash = True
+                        redo_flash_time = now + 120
                     elif event.key == pygame.K_m:
                         mode_buttons[0].handle_click()
+                    elif event.key == pygame.K_i and not (pygame.key.get_mods() & pygame.KMOD_CTRL):
+                        # I key: Activate eyedropper (pick color mode)
+                        if mode != PICK_MODE:
+                            mode = PICK_MODE
+                            print("Eyedropper activated - Click on canvas to pick color")
                     elif event.key == pygame.K_p and not (pygame.key.get_mods() & pygame.KMOD_CTRL):
                         tool = POINT_TOOL
                         for b in tool_buttons:
