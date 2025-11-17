@@ -231,38 +231,28 @@ def load_rgb_texture(filepath):
         
         data_str = match.group(1)
         
-        # Parse RGB data
-        rows = []
-        for line in data_str.split('\n'):
-            line = line.strip()
-            if not line or line.startswith('//'):
-                continue
-            
-            pixel_pattern = r'\{(\d+),\s*(\d+),\s*(\d+)\}'
-            pixels = []
-            for pixel_match in re.finditer(pixel_pattern, line):
-                r = int(pixel_match.group(1))
-                g = int(pixel_match.group(2))
-                b = int(pixel_match.group(3))
-                pixels.append([r, g, b])
-            
-            if pixels:
-                if len(pixels) == TEXTURE_SIZE:
-                    rows.append(pixels)
-                elif len(pixels) < TEXTURE_SIZE and rows and len(rows[-1]) < TEXTURE_SIZE:
-                    rows[-1].extend(pixels)
-                else:
-                    rows.append(pixels)
+        # Parse RGB data - find all pixels first
+        pixel_pattern = r'\{\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\}'
+        all_pixels = []
         
-        valid_rows = [row for row in rows if len(row) == TEXTURE_SIZE]
+        for pixel_match in re.finditer(pixel_pattern, data_str):
+            r = int(pixel_match.group(1))
+            g = int(pixel_match.group(2))
+            b = int(pixel_match.group(3))
+            all_pixels.append([r, g, b])
         
-        if len(valid_rows) != TEXTURE_SIZE:
-            print(f"Error: Expected {TEXTURE_SIZE} rows, got {len(valid_rows)}")
+        # Verify we have exactly 64x64 pixels
+        expected_pixels = TEXTURE_SIZE * TEXTURE_SIZE
+        if len(all_pixels) != expected_pixels:
+            print(f"Error: Expected {expected_pixels} pixels, got {len(all_pixels)}")
             return False
         
+        # Reshape into 64x64 array
+        pixel_index = 0
         for y in range(TEXTURE_SIZE):
             for x in range(TEXTURE_SIZE):
-                texture_data[y, x] = valid_rows[y][x]
+                texture_data[y, x] = all_pixels[pixel_index]
+                pixel_index += 1
         
         print(f"✓ Loaded RGB texture: {texture_name} from {filepath}")
         undo_stack.clear()
@@ -278,11 +268,14 @@ def load_rgb_texture(filepath):
 
 def export_texture():
     """Export texture as C++ header file (RGB format)"""
-    global current_texture_file, texture_name
+    global current_texture_file, texture_name, texture_data
     
     if not texture_name or not current_texture_file:
         print("Error: No texture name set. Please create a new texture first (Ctrl+N)")
         return False
+    
+    # Debug: verify texture_data shape before export
+    print(f"DEBUG export_texture: texture_data.shape = {texture_data.shape}")
     
     filename = os.path.basename(current_texture_file)
     tex_name = os.path.splitext(filename)[0].upper()
@@ -310,6 +303,7 @@ def export_texture():
         with open(current_texture_file, 'w', encoding='utf-8') as f:
             f.write(code)
         print(f"✓ Exported to {current_texture_file}")
+        print(f"DEBUG: Wrote {len(code.split(chr(10)))} lines to file")
         return True
     except Exception as e:
         print(f"Error exporting texture: {e}")
@@ -742,7 +736,7 @@ def import_png():
         # Resize image
         img_resized = img.resize((new_w, new_h), Image.Resampling.LANCZOS)
         
-        # Create 64x64 white canvas and convert to numpy array filled with white
+        # Create 64x64 white canvas - update global texture_data
         texture_data = np.full((TEXTURE_SIZE, TEXTURE_SIZE, 3), [255, 255, 255], dtype=np.uint8)
         
         # Calculate center position
@@ -752,6 +746,10 @@ def import_png():
         # Convert resized image to numpy array and paste into texture_data
         img_array = np.array(img_resized, dtype=np.uint8)
         texture_data[paste_y:paste_y+new_h, paste_x:paste_x+new_w] = img_array
+        
+        # Verify shape before export
+        print(f"DEBUG: texture_data.shape = {texture_data.shape}")
+        assert texture_data.shape == (TEXTURE_SIZE, TEXTURE_SIZE, 3), f"Wrong shape: {texture_data.shape}"
         
         # Auto-name from PNG filename
         png_basename = Path(filepath).stem
@@ -769,7 +767,7 @@ def import_png():
         textures_dir.mkdir(parents=True, exist_ok=True)
         current_texture_file = str(textures_dir / f"{texture_name}.h")
         
-        # Save state for undo
+        # Save state for undo (after texture_data is updated)
         save_state()
         
         # Auto-save
@@ -779,6 +777,7 @@ def import_png():
         print(f"  Original size: {orig_w}x{orig_h}")
         print(f"  Resized to: {new_w}x{new_h} (centered in 64x64)")
         print(f"  Texture named: {texture_name}")
+        print(f"  Exported to: {current_texture_file}")
         return True
         
     except Exception as e:
