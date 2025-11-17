@@ -3,6 +3,7 @@
 
 #include "core/Types.h"
 #include "entities/Player.h"
+#include "entities/Enemy.h"
 #include "world/Map.h"
 #include <vector>
 #include <string>
@@ -14,6 +15,10 @@ public:
     void clear();
     void draw3DView(const std::vector<RayHit>& rayHits, 
                     const Player& player, const Map& map);
+    void drawEnemies3D(const std::vector<Enemy>& enemies,
+                   const Player& player,
+                   const Map& map,
+                   const std::vector<RayHit>& rayHits);
     void drawCrosshair();
     void drawDebugInfo(const Player& player, bool show);
     void present();

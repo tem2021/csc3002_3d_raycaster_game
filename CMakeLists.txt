@@ -15,8 +15,9 @@ file(GLOB SRC_FILES
 
 add_executable(raycaster ${SRC_FILES})
 
-# macOS OpenGL + GLUT
-target_link_libraries(raycaster
-    "-framework OpenGL"
-    "-framework GLUT"
-)
+# Windows MinGW + freeglut
+target_link_libraries(raycaster PRIVATE
+        freeglut
+        glu32
+        opengl32
+    )

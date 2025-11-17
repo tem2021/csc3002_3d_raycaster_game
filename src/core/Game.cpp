@@ -48,6 +48,13 @@ void Game::init() {
         screenWidth_ / 2,
         screenHeight_ / 2
     );
+    // --- init enemies ---
+    Vec2 p = map_->getInitPosition();
+
+    // 放在玩家正前方 50px（非常近，一定能看到）
+    enemies_.clear();
+    enemies_.push_back(Enemy(Vec2{p.x + 50, p.y}, 0.0f));
+
 }
 
 void Game::handleInput() {
@@ -80,9 +87,13 @@ void Game::processPlayerInput() {
 }
 
 void Game::update() {
-    // update the game logic in the future 
-    // e.g. enemy ai / weapons 
+    Vec2 playerPos = player_->getPosition();
+
+    for (auto& e : enemies_) {
+        e.update(playerPos, *map_);
+    }
 }
+
 
 void Game::render() {
     renderer_->clear();
@@ -97,7 +108,8 @@ void Game::render() {
     
     // render 3d View
     renderer_->draw3DView(rayHits, *player_, *map_);
-    
+    renderer_->drawEnemies3D(enemies_, *player_, *map_, rayHits);
+
     // render crosshair
     renderer_->drawCrosshair();
     

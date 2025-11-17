@@ -16,6 +16,7 @@
 #include <iomanip>
 #include <cmath>
 #include <algorithm>
+#include "entities/Enemy.h"
 
 Renderer::Renderer(int screenWidth, int screenHeight)
     : screenWidth_(screenWidth), screenHeight_(screenHeight) {
@@ -146,6 +147,55 @@ void Renderer::drawText(int x, int y, const std::string& text) {
         glutBitmapCharacter(GLUT_BITMAP_HELVETICA_10, c);
     }
 }
+
+void Renderer::drawEnemies3D(const std::vector<Enemy>& enemies,
+                             const Player& player,
+                             const Map& map,
+                             const std::vector<RayHit>& rayHits) 
+{
+    int numRays = rayHits.size();
+    float fov = GameConfig::FOV * Math::DEG_TO_RAD;
+
+    for (const auto& enemy : enemies) {
+        Vec2 ep = enemy.getPosition();
+        Vec2 pp = player.getPosition();
+
+        float dx = ep.x - pp.x;
+        float dy = ep.y - pp.y;
+        float dist = std::sqrt(dx*dx + dy*dy);
+
+        // angle enemy → player
+        float enemyAngle = std::atan2(dy, dx) - player.getAngle();
+
+        while (enemyAngle < -Math::PI) enemyAngle += Math::TWO_PI;
+        while (enemyAngle >  Math::PI) enemyAngle -= Math::TWO_PI;
+
+        if (std::fabs(enemyAngle) > fov / 2) continue;  // 不在视野内
+
+        // mapping to ray index
+        float ratio = (enemyAngle + fov/2) / fov;
+        int rayId = ratio * numRays;
+        if (rayId < 0 || rayId >= numRays) continue;
+
+        // 若被墙挡住 → 不画
+        if (dist > rayHits[rayId].distance+30) continue;
+
+        float height = map.getTileSize() * screenHeight_ / dist;
+        float centerY = screenHeight_ / 2;
+
+        float x = (float)rayId / numRays * screenWidth_;
+        float half = height / 2;
+
+        glColor3f(1, 0, 0);   // 红色
+        glBegin(GL_QUADS);
+        glVertex2f(x - half, centerY - half);
+        glVertex2f(x + half, centerY - half);
+        glVertex2f(x + half, centerY + half);
+        glVertex2f(x - half, centerY + half);
+        glEnd();
+    }
+}
+
 
 void Renderer::present() {
     glutSwapBuffers();
