@@ -178,7 +178,9 @@ void Renderer::drawEnemies3D(const std::vector<Enemy>& enemies,
         if (rayId < 0 || rayId >= numRays) continue;
 
         // 若被墙挡住 → 不画
-        if (dist > rayHits[rayId].distance+30) continue;
+        if (rayHits[rayId].hit && rayHits[rayId].distance < dist) 
+            continue;
+
 
         float height = map.getTileSize() * screenHeight_ / dist;
         float centerY = screenHeight_ / 2;

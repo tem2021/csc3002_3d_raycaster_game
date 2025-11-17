@@ -35,6 +35,7 @@ private:
     int screenHeight_;
     
     void processPlayerInput();
+    Vec2 findFreeSpawnPoint();
 };
 
 #endif // GAME_H
