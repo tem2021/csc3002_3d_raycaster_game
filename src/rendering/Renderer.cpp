@@ -54,17 +54,21 @@ void Renderer::draw3DView(const std::vector<RayHit>& rayHits,
         while (ca < 0.0f) ca += Math::TWO_PI;
         while (ca > Math::TWO_PI) ca -= Math::TWO_PI;
         
-        // linearlize the distance (i.e the distance of projection on the casting ray of the player's angle)
         float correctedDist = hit.distance * std::cos(ca);
 
         // ensure the correctness of rendering wall textures when player is very close to the wall
         correctedDist = std::max(correctedDist, RenderConfig::MIN_WALL_DISTANCE);
-        
+
         // draw wall with texture
         drawWall(i, correctedDist, hit, map);
         
         // calculate wall height
+        // this is the direct result of the Perspective Projection 
+        // the increasing of the angle is suffcient small, hence the endpoints of the rays moves 
+        // approximately the same distance each time
+
         float lineH = map.getTileSize() * screenHeight_ / correctedDist;
+
         lineH = std::min(lineH, static_cast<float>(screenHeight_));
         float lineO = (screenHeight_ / 2.0f) - lineH / 2.0f;
         

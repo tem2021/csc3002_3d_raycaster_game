@@ -32,3 +32,6 @@ Linzheng: For the Map Editor, if the texture files are too much, then the Map Ed
 ---
 
 Comment [Linzheng]: I believe we won't meet such problem since our game don't need so many textures.
+
+# 2025-11-18 
+The shape of the wall is decided by the shape of the window. Probably I need to adjust the numberofRays based on the shape of the window I guess.
