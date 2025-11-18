@@ -43,6 +43,7 @@ void Renderer::draw3DView(const std::vector<RayHit>& rayHits,
         while (ca > Math::TWO_PI) ca -= Math::TWO_PI;
         
         float correctedDist = hit.distance * std::cos(ca);
+        correctedDist = std::max(correctedDist, RenderConfig::MIN_WALL_DISTANCE);
         
         // draw wall with texture
         drawWall(i, correctedDist, hit, map);
@@ -58,8 +59,22 @@ void Renderer::draw3DView(const std::vector<RayHit>& rayHits,
 }
 
 void Renderer::drawWall(int screenX, float distance, const RayHit& hit, const Map& map) {
+    distance = std::max(distance, RenderConfig::MIN_WALL_DISTANCE);
     float lineH = map.getTileSize() * screenHeight_ / distance;
-    lineH = std::min(lineH, static_cast<float>(screenHeight_));
+    
+    // Calculate texture coordinates before clamping wall height
+    float texStartY = 0.0f;
+    float texEndY = 1.0f;
+    
+    // If wall is taller than screen, we need to clip texture coordinates
+    if (lineH > screenHeight_) {
+        float visibleRatio = screenHeight_ / lineH;
+        float clipAmount = (1.0f - visibleRatio) / 2.0f;
+        texStartY = clipAmount;
+        texEndY = 1.0f - clipAmount;
+        lineH = screenHeight_;
+    }
+    
     float lineO = (screenHeight_ / 2.0f) - lineH / 2.0f;
     
     // Get texture for this wall type
@@ -76,18 +91,18 @@ void Renderer::drawWall(int screenX, float distance, const RayHit& hit, const Ma
             RenderConfig::WALL_BRIGHTNESS_H;
         glColor3f(brightness, brightness, brightness);
         
-        // Draw quad with texture coordinates
+        // Draw quad with correct texture coordinates
         glBegin(GL_QUADS);
-        glTexCoord2f(hit.wallHitX, 0.0f); 
+        glTexCoord2f(hit.wallHitX, texStartY); 
         glVertex2f(screenX, lineO);
         
-        glTexCoord2f(hit.wallHitX, 1.0f); 
+        glTexCoord2f(hit.wallHitX, texEndY); 
         glVertex2f(screenX, lineO + lineH);
         
-        glTexCoord2f(hit.wallHitX, 1.0f); 
+        glTexCoord2f(hit.wallHitX, texEndY); 
         glVertex2f(screenX + 1, lineO + lineH);
         
-        glTexCoord2f(hit.wallHitX, 0.0f); 
+        glTexCoord2f(hit.wallHitX, texStartY); 
         glVertex2f(screenX + 1, lineO);
         glEnd();
         
