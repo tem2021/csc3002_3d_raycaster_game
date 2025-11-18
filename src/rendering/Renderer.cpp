@@ -148,25 +148,22 @@ void Renderer::drawDebugInfo(const Player& player, bool show) {
     if (!show) return;
     
     std::ostringstream oss;
+    int startY = screenHeight_ - 75;
     
+    oss << "Health: " << player.getHealth() << " / " << PlayerConfig::MAX_HEALTH;
+    drawText(10, startY, oss.str());
+
+    oss.str("");
     oss << "Angle: " << std::fixed << std::setprecision(2) << player.getAngle();
-    drawText(10, screenHeight_ - 15, oss.str());
+    drawText(10, startY + 20, oss.str());
     
     oss.str("");
     oss << "Pos X: " << std::fixed << std::setprecision(2) << player.getPosition().x;
-    drawText(10, screenHeight_ - 35, oss.str());
+    drawText(10, startY + 40, oss.str());
     
     oss.str("");
     oss << "Pos Y: " << std::fixed << std::setprecision(2) << player.getPosition().y;
-    drawText(10, screenHeight_ - 55, oss.str());
-}
-
-void Renderer::drawHealthValue(const Player& player) {
-    std::ostringstream oss;
-    
-    oss << "Health: " << player.getHealth();
-    drawText(5, 15, oss.str());
-
+    drawText(10, startY + 60, oss.str());
 }
 
 void Renderer::drawHealthBar(const Player& player) {
@@ -227,9 +224,6 @@ void Renderer::drawHealthBar(const Player& player) {
 	int textX = x + fullWidth + PlayerConfig::HEALTH_BAR_MARGIN;
 	int textY = y + (barHeight / 2) + 4;
 	drawText(textX, textY, oss.str());
-
-	// Restore color to white
-	glColor3f(1.0f, 1.0f, 1.0f);
 }
 
 void Renderer::drawText(int x, int y, const std::string& text) {
