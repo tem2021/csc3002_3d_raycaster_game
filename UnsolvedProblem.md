@@ -23,6 +23,7 @@ This seems to be the only affected block? Maybe it's due to where the player is 
 --- 
 
 Comment [Linzheng]: For this problem, I think it's because how we initialize the game based on the map (level1.h), I believe that is because some of the float point calculating problem. When we initialize the game, the player is generated inside the wall (i.e. 1) in your example instead of the original p place. I believe this is the reason. Let me check the code.
+
 Comment [Linzheng] 2025-11-18: Update the logic of `Map.cpp` help me solve the bug
 
 # 2025-11-17
