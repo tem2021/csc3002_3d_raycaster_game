@@ -124,11 +124,32 @@ At this step, you finish the editing of .h files (Maps and Textures). You can us
 4. Modify the Game.cpp
 
 ```
-Line 5: include the texture data here 
-Line 71: Load the texture with Texture Manager
+Include the texture data at the top of the file
+Load the texture with Texture Manager on Game::loadTextures()
 ```
 
 Then you finish the editing of wall textures
+
+### For Floor Textures
+
+Now the texture for all floors are the same (unlike the walls). 
+
+1. Create/Edit Textures: Use texture_editor.py 
+2. Modify the Game.cpp
+
+
+```
+Include the texture data at the top of the file
+Load the texture with Texture Manager on Game::loadTextures()
+```
+
+3. Modify the Renderer.cpp 
+
+```
+Modify the Renderer:drawFloorTiled, find GLuint floorTexID and change the ID 
+```
+
+Consider the method we render the floor now, I highly recommend you to use textures likegrass and marbles instead of stones. (i.e. nearly pure color textures)
 
 ---
 

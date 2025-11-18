@@ -198,7 +198,7 @@ void Renderer::drawText(int x, int y, const std::string& text) {
 
 void Renderer::drawFloorTiled(const Player& player, const Map& map) {
     // Get floor texture (using grass texture for floor)
-    GLuint floorTexID = textureManager_.getTextureID(6); // grass
+    GLuint floorTexID = textureManager_.getTextureID(5); 
     
     if (floorTexID == 0) {
         // Fallback: draw gray floor
