@@ -238,23 +238,10 @@ void Renderer::drawText(int x, int y, const std::string& text) {
 void Renderer::drawFloorTiled(const Player& player, const Map& map) {
     // Get floor texture (using grass texture for floor)
     GLuint floorTexID = textureManager_.getTextureID(5); // grass 
-    
-    if (floorTexID == 0) {
-        // Fallback: draw gray floor
-        glColor3f(0.3f, 0.3f, 0.3f);
-        glBegin(GL_QUADS);
-        glVertex2f(0, screenHeight_ / 2);
-        glVertex2f(screenWidth_, screenHeight_ / 2);
-        glVertex2f(screenWidth_, screenHeight_);
-        glVertex2f(0, screenHeight_);
-        glEnd();
-        return;
-    }
-    
     glEnable(GL_TEXTURE_2D);
     glBindTexture(GL_TEXTURE_2D, floorTexID);
     
-    // Enable perspective correction hint for better texture quality
+    // Hint GPU to use perspective-correct interpolation (legacy GL)
     glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
     
     Vec2 playerPos = player.getPosition();
@@ -270,11 +257,12 @@ void Renderer::drawFloorTiled(const Player& player, const Map& map) {
     float brightness = RenderConfig::FLOOR_BRIGHTNESS;
     glColor3f(brightness, brightness, brightness);
     
-    // Draw floor in multiple horizontal strips for better perspective
-    int numStrips = RenderConfig::FLOOR_STRIPS;  // More strips = better perspective but slower
+    // Draw floor in multiple horizontal strips 
+    // More strips = better perspective but slower
+    int numStrips = RenderConfig::FLOOR_STRIPS;  
     float stripHeight = (screenHeight_ / 2.0f) / numStrips;
     
-    for (int strip = 0; strip < numStrips; ++strip) {
+    for (int strip = 0; strip < numStrips; strip++) {
         float nearY = screenHeight_ / 2.0f + strip * stripHeight;
         float farY = nearY + stripHeight;
         
@@ -315,18 +303,6 @@ void Renderer::drawFloorTiled(const Player& player, const Map& map) {
 void Renderer::drawCeilingTiled(const Player& player, const Map& map) {
     // Get ceiling texture (using dark ceiling texture)
     GLuint ceilingTexID = textureManager_.getTextureID(50); // ceiling
-    
-    if (ceilingTexID == 0) {
-        // Fallback: draw dark gray ceiling
-        glColor3f(0.15f, 0.15f, 0.15f);
-        glBegin(GL_QUADS);
-        glVertex2f(0, 0);
-        glVertex2f(screenWidth_, 0);
-        glVertex2f(screenWidth_, screenHeight_ / 2);
-        glVertex2f(0, screenHeight_ / 2);
-        glEnd();
-        return;
-    }
     
     glEnable(GL_TEXTURE_2D);
     glBindTexture(GL_TEXTURE_2D, ceilingTexID);
