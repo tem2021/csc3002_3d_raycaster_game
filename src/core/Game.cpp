@@ -12,6 +12,7 @@
 #include "data/textures/ceiling.h"
 #include "data/textures/CUHK_SZ.h"
 #include "data/textures/Hajimi.h"
+#include "rendering/TextureManager.h"
 
 #include <GL/freeglut_std.h>
 #include <iostream>
@@ -71,7 +72,7 @@ void Game::init() {
 void Game::loadTextures() {
     std::cout << "Loading textures..." << std::endl;
     
-    auto& texManager = renderer_->getTextureManager();
+    TextureManager& texManager = renderer_->getTextureManager();
     
     // Load textures with their IDs (matching map data)
     texManager.loadTexture(1, BRICK_DATA);

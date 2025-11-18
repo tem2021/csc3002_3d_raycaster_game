@@ -65,10 +65,14 @@ void Renderer::draw3DView(const std::vector<RayHit>& rayHits,
 }
 
 void Renderer::drawWall(int screenX, float distance, const RayHit& hit, const Map& map) {
-    distance = std::max(distance, RenderConfig::MIN_WALL_DISTANCE);
+
+    // calculate wall height
+    // this is the direct result of the Perspective Projection 
+    // the increasing of the angle is suffcient small, hence the endpoints of the rays moves 
+    // approximately the same distance each time 
     float lineH = map.getTileSize() * screenHeight_ / distance;
     
-    // Calculate texture coordinates before clamping wall height
+    // calculate texture coordinates for each hit
     float texStartY = 0.0f;
     float texEndY = 1.0f;
     
@@ -81,6 +85,7 @@ void Renderer::drawWall(int screenX, float distance, const RayHit& hit, const Ma
         lineH = screenHeight_;
     }
     
+    // Starting point of the wall 
     float lineO = (screenHeight_ / 2.0f) - lineH / 2.0f;
     
     // Get texture for this wall type
@@ -97,7 +102,7 @@ void Renderer::drawWall(int screenX, float distance, const RayHit& hit, const Ma
             RenderConfig::WALL_BRIGHTNESS_H;
         glColor3f(brightness, brightness, brightness);
         
-        // Draw quad with correct texture coordinates
+        // Draw quad with correct texture coordinates with counter-clockwise
         glBegin(GL_QUADS);
         glTexCoord2f(hit.wallHitX, texStartY); 
         glVertex2f(screenX, lineO);
@@ -113,8 +118,10 @@ void Renderer::drawWall(int screenX, float distance, const RayHit& hit, const Ma
         glEnd();
         
         glDisable(GL_TEXTURE_2D);
-    } else {
-        // Fallback: draw colored wall if no texture
+    } 
+    
+    // usually impossible to have texID = 0; just write here in case  
+    else {
         float brightness = hit.isVertical ? 
             RenderConfig::WALL_BRIGHTNESS_V : 
             RenderConfig::WALL_BRIGHTNESS_H;

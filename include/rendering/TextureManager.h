@@ -34,8 +34,10 @@ public:
 private:
     std::unordered_map<int, GLuint> textures_;
     
-    // Disable copy
+    // Disable: TextureManager a = b or TextureManager a(b)
     TextureManager(const TextureManager&) = delete;
+
+    // Disable: a = b 
     TextureManager& operator=(const TextureManager&) = delete;
 };
 
