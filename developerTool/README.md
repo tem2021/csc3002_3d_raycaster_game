@@ -151,6 +151,10 @@ Modify the Renderer:drawFloorTiled, find GLuint floorTexID and change the ID
 
 Consider the method we render the floor now, I highly recommend you to use textures likegrass and marbles instead of stones. (i.e. nearly pure color textures)
 
+### For Ceiling Textures 
+
+The Same as floor textures, modify the `Renderer::drawCeilingTiled` on Renderer.cpp
+
 ---
 
 ## File Structure
