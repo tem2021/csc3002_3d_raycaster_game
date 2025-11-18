@@ -188,12 +188,75 @@ void Renderer::drawDebugInfo(const Player& player, bool show) {
     drawText(5, 35, oss.str());
 }
 
-void Renderer::drawHealthBar(const Player& player) {
+void Renderer::drawHealthValue(const Player& player) {
     std::ostringstream oss;
     
     oss << "Health: " << player.getHealth();
     drawText(5, 15, oss.str());
 
+}
+
+void Renderer::drawHealthBar(const Player& player) {
+	int fullWidth = static_cast<int>(screenWidth_ * PlayerConfig::HEALTH_BAR_WIDTH_PERCENT);
+	int barHeight = static_cast<int>(screenWidth_ * PlayerConfig::HEALTH_BAR_HEIGHT_PERCENT);
+	int x = PlayerConfig::HEALTH_BAR_MARGIN;
+	int y = PlayerConfig::HEALTH_BAR_MARGIN;
+
+	// Normalise health to be a float between 0.0 and 1.0
+	float hp = static_cast<float>(player.getHealth()) / static_cast<float>(PlayerConfig::MAX_HEALTH);
+	if (hp < 0.0f) hp = 0.0f;
+	if (hp > 1.0f) hp = 1.0f;
+
+	int filledWidth = static_cast<int>(fullWidth * hp);
+
+	glDisable(GL_TEXTURE_2D);
+
+	// Background bar (dark grey)
+	glColor3f(0.12f, 0.12f, 0.12f);
+	glBegin(GL_QUADS);
+		glVertex2f(x, y);
+		glVertex2f(x + fullWidth, y);
+		glVertex2f(x + fullWidth, y + barHeight);
+		glVertex2f(x, y + barHeight);
+	glEnd();
+
+	// Health color is more green at high health, turns redder at lower health
+	float fillR = 1.0f - hp;
+	float fillG = hp;
+	glColor3f(fillR, fillG, 0.0f);
+
+	// Only draw fill if width > 0
+	if (filledWidth > 0) {
+		glBegin(GL_QUADS);
+			glVertex2f(x, y);
+			glVertex2f(x + filledWidth, y);
+			glVertex2f(x + filledWidth, y + barHeight);
+			glVertex2f(x, y + barHeight);
+		glEnd();
+	}
+
+	// Border outline
+	glColor3f(0.0f, 0.0f, 0.0f);
+	glLineWidth(1.5f);
+	glBegin(GL_LINE_LOOP);
+		glVertex2f(x, y);
+		glVertex2f(x + fullWidth, y);
+		glVertex2f(x + fullWidth, y + barHeight);
+		glVertex2f(x, y + barHeight);
+	glEnd();
+	glLineWidth(1.0f);
+
+	// Draw health value to the right of the health bar
+	std::ostringstream oss;
+	oss << player.getHealth() << " / " << PlayerConfig::MAX_HEALTH;
+	
+	// Vertically center the text
+	int textX = x + fullWidth + PlayerConfig::HEALTH_BAR_MARGIN;
+	int textY = y + (barHeight / 2) + 4;
+	drawText(textX, textY, oss.str());
+
+	// Restore color to white
+	glColor3f(1.0f, 1.0f, 1.0f);
 }
 
 void Renderer::drawText(int x, int y, const std::string& text) {

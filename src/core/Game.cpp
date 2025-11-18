@@ -44,7 +44,7 @@ void Game::init() {
     
     // create the player
     float moveSpeed = GameConfig::MOVE_SPEED_FACTOR * tileSize;
-    int health = PlayerConfig::HEALTH;
+    int health = PlayerConfig::MAX_HEALTH;
     player_ = std::make_unique<Player>(
         map_->getInitPosition(),
         0.0f,  // initial angle
