@@ -22,12 +22,12 @@ bool Map::isWall(int x, int y) const {
     if (x < 0 || x >= width_ || y < 0 || y >= height_) {
         return true;  
     }
-    return tiles_[y][x] > 0;  // 任何非0值都是墙
+    return tiles_[y][x] > 0;  // only type 0 is not the wall
 }
 
 int Map::getWallType(int x, int y) const {
     if (x < 0 || x >= width_ || y < 0 || y >= height_) {
-        return 1;  // 边界默认为类型1
+        return 1;  // by default the edge wall type is 1
     }
     return tiles_[y][x];
 }

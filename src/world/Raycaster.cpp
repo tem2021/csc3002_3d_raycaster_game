@@ -4,8 +4,7 @@
 
 Raycaster::Raycaster(const Map& map) : map_(map) {}
 
-std::vector<RayHit> Raycaster::castRays(const Vec2& origin, float startAngle, 
-                                         float fov, int numRays) const {
+std::vector<RayHit> Raycaster::castRays(const Vec2& origin, float startAngle, float fov, int numRays) const {
     std::vector<RayHit> hits;
     hits.reserve(numRays);
     
@@ -21,15 +20,15 @@ std::vector<RayHit> Raycaster::castRays(const Vec2& origin, float startAngle,
 }
 
 RayHit Raycaster::castRay(const Vec2& origin, float angle) const {
-    // 规范化角度
+    // normalize the angle to [0, 2π]
     while (angle < 0.0f) angle += Math::TWO_PI;
     while (angle > Math::TWO_PI) angle -= Math::TWO_PI;
     
-    // 检查水平和垂直交点
+    // check the hitting points vertically and horizontally
     RayHit hHit = checkHorizontalIntersections(origin, angle);
     RayHit vHit = checkVerticalIntersections(origin, angle);
     
-    // 返回最近的击中
+    // return the nearest hitting point
     if (hHit.hit && vHit.hit) {
         return (hHit.distance < vHit.distance) ? hHit : vHit;
     } else if (hHit.hit) {
@@ -44,28 +43,47 @@ RayHit Raycaster::checkHorizontalIntersections(const Vec2& origin, float angle) 
     int mapS = map_.getTileSize();
     float epsilon = mapS * Math::EPSILON;
     
-    // 确定光线方向
+    // yo, xo: in each step, how far the ray goes 
+    // ry, rx: the endpoints of the rays at each step
     float ry, rx, yo, xo;
     
-    if (angle > Math::PI) {  // 朝上
+    // since I initialize the GLUT using x grows from left to right 
+    // and y grows from top to bottom, the angle grows clockwise.  
+    // angle 0 looks like ->; angle π/2 points directly downwards
+   
+    // initialize the first step
+    // points up
+    if (angle > Math::PI) {  
+
+        // -epsilon: ensure the endpoints is above the horizontal lines
+        // to avoid possible mistakes due to the floating point
         ry = (static_cast<int>(origin.y) / mapS) * mapS - epsilon;
         rx = (ry - origin.y) / std::tan(angle) + origin.x;
+
         yo = -mapS;
         xo = yo / std::tan(angle);
-    } else if (angle < Math::PI) {  // 朝下
+    }
+    
+    // points down
+    else if (angle < Math::PI) {  
+
+        // +epsilon: ensure the endpoints is below the horizontal lines
         ry = (static_cast<int>(origin.y) / mapS) * mapS + mapS + epsilon;
         rx = (ry - origin.y) / std::tan(angle) + origin.x;
         yo = mapS;
         xo = yo / std::tan(angle);
-    } else {  // 水平方向
-        return hit;  // 不会击中水平线
+    }
+   
+    // points horizontally
+    else {  
+        return hit;  // never hit the horizontal edges of the walls
     }
     
-    // 步进检查
-    int dof = 0;
-    int maxDof = map_.getWidth();
+    // step by step check
+    int depth = 0; 
+    int maxDepth = map_.getWidth();  
     
-    while (dof < maxDof) {
+    while (depth < maxDepth) {
         int mx = static_cast<int>(rx) / mapS;
         int my = static_cast<int>(ry) / mapS;
         
@@ -75,14 +93,15 @@ RayHit Raycaster::checkHorizontalIntersections(const Vec2& origin, float angle) 
             hit.distance = origin.distanceTo(hit.hitPoint);
             hit.isVertical = false;
             hit.wallType = map_.getWallType(mx, my);
-            // 计算墙面碰撞的X坐标 (0.0-1.0)
-            hit.wallHitX = rx / mapS - std::floor(rx / mapS);
+           
+            // calculate the x coordinate of the hitting point correspoding the to wall
+            hit.wallHitX = rx / mapS - mx;
             break;
         }
         
         rx += xo;
         ry += yo;
-        dof++;
+        depth++;
     }
     
     return hit;
@@ -109,10 +128,10 @@ RayHit Raycaster::checkVerticalIntersections(const Vec2& origin, float angle) co
         return hit;
     }
     
-    int dof = 0;
-    int maxDof = map_.getHeight();
+    int depth = 0;
+    int maxDepth = map_.getHeight();
     
-    while (dof < maxDof) {
+    while (depth < maxDepth) {
         int mx = static_cast<int>(rx) / mapS;
         int my = static_cast<int>(ry) / mapS;
         
@@ -129,7 +148,7 @@ RayHit Raycaster::checkVerticalIntersections(const Vec2& origin, float angle) co
         
         rx += xo;
         ry += yo;
-        dof++;
+        depth++;
     }
     
     return hit;

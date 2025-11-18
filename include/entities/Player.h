@@ -27,7 +27,9 @@ private:
     float angle_;
     float moveSpeed_;
     
+    // Update the velocity (moveSpeed) component on x and y
     void updateDirection();
+
     bool willCollide(const Vec2& newPos, const Map& map) const;
     void tryMove(const Vec2& delta, const Map& map);
 };
