@@ -61,18 +61,6 @@ void Renderer::draw3DView(const std::vector<RayHit>& rayHits,
 
         // draw wall with texture
         drawWall(i, correctedDist, hit, map);
-        
-        // calculate wall height
-        // this is the direct result of the Perspective Projection 
-        // the increasing of the angle is suffcient small, hence the endpoints of the rays moves 
-        // approximately the same distance each time
-
-        float lineH = map.getTileSize() * screenHeight_ / correctedDist;
-
-        lineH = std::min(lineH, static_cast<float>(screenHeight_));
-        float lineO = (screenHeight_ / 2.0f) - lineH / 2.0f;
-        
-        drawCeiling(i, lineO, correctedDist);
     }
 }
 
@@ -138,34 +126,6 @@ void Renderer::drawWall(int screenX, float distance, const RayHit& hit, const Ma
         glVertex2f(screenX, lineO + lineH);
         glEnd();
     }
-}
-
-void Renderer::drawFloor(int screenX, float wallBottom, float distance, const Map& map) {
-    float floorStart = std::max(wallBottom, static_cast<float>(screenHeight_) / 2.0f);
-    
-    float maxDist = map.getTileSize() * RenderConfig::MAX_FLOOR_DIST;
-    float brightness = 1.0f - (distance / maxDist);
-    brightness = std::clamp(brightness, RenderConfig::MIN_BRIGHTNESS, 1.0f);
-    brightness *= RenderConfig::FLOOR_BRIGHTNESS;
-    
-    glBegin(GL_LINES);
-    glColor3f(brightness, brightness, brightness);
-    glVertex2f(screenX, floorStart);
-    glColor3f(0.0f, 0.0f, 0.0f);
-    glVertex2f(screenX, screenHeight_);
-    glEnd();
-}
-
-void Renderer::drawCeiling(int screenX, float wallTop, float) {
-    float ceilingEnd = std::min(wallTop, static_cast<float>(screenHeight_) / 2.0f);
-    
-    float brightness = RenderConfig::CEILING_BRIGHTNESS * RenderConfig::MIN_BRIGHTNESS;
-    glColor3f(brightness, brightness, brightness);
-    
-    glBegin(GL_LINES);
-    glVertex2f(screenX, 0);
-    glVertex2f(screenX, ceilingEnd);
-    glEnd();
 }
 
 void Renderer::drawCrosshair() {

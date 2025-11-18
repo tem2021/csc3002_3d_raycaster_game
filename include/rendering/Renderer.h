@@ -36,8 +36,6 @@ private:
     
     void drawText(int x, int y, const std::string& text);
     void drawWall(int screenX, float distance, const RayHit& hit, const Map& map);
-    void drawFloor(int screenX, float wallBottom, float distance, const Map& map);
-    void drawCeiling(int screenX, float wallTop, float distance);
     void drawFloorTiled(const Player& player, const Map& map);
     void drawCeilingTiled(const Player& player, const Map& map);
 };
