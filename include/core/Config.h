@@ -28,7 +28,7 @@ namespace RenderConfig {
     constexpr float MIN_BRIGHTNESS = 0.15f;
     constexpr float MAX_FLOOR_DIST = 10.0f;
     constexpr float CROSSHAIR_SIZE = 0.01f;
-    constexpr float MIN_WALL_DISTANCE = 1.0f;  // Minimum distance to prevent texture distortion
+    constexpr float MIN_WALL_DISTANCE = 0.1f;  // Minimum distance to prevent texture distortion
 }
 
 #endif // CONFIG_H
