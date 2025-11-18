@@ -1,19 +1,8 @@
 # Texture ID to File Mapping Configuration
-# This file defines the relationship between texture IDs and texture files
-# 
-# Format: ID:filename:display_name
-#   ID: Integer from 0-255 (0 is always empty/air)
-#   filename: Name of the .h file in include/data/textures/ (or "null" for empty)
-#   display_name: Human-readable name for display in tools
+# Format: ID (0 - 255):filename(.h):display_name
 #
-# Lines starting with # are comments and will be ignored
-# Empty lines are also ignored
-#
-# IMPORTANT: 
-# - ID 0 is reserved for empty space (no wall)
-# - Maximum supported IDs: 0-255 
-# - When adding new textures, assign the next available ID
-# - Both map_editor.py and C++ code read this file
+# Lines starting with # and empty lines will be ignored
+# 0 is reserved for empty space; 50 is reserved for ceiling texture 
 
 # Empty space (required)
 0:null:Empty
