@@ -150,15 +150,15 @@ void Renderer::drawDebugInfo(const Player& player, bool show) {
     std::ostringstream oss;
     
     oss << "Angle: " << std::fixed << std::setprecision(2) << player.getAngle();
-    drawText(5, 15, oss.str());
+    drawText(10, screenHeight_ - 15, oss.str());
     
     oss.str("");
     oss << "Pos X: " << std::fixed << std::setprecision(2) << player.getPosition().x;
-    drawText(5, 25, oss.str());
+    drawText(10, screenHeight_ - 35, oss.str());
     
     oss.str("");
     oss << "Pos Y: " << std::fixed << std::setprecision(2) << player.getPosition().y;
-    drawText(5, 35, oss.str());
+    drawText(10, screenHeight_ - 55, oss.str());
 }
 
 void Renderer::drawHealthValue(const Player& player) {
