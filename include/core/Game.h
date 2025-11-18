@@ -17,8 +17,9 @@ public:
     void update();
     void render();
     void handleInput();
+    void loadTextures();  // Load all textures
     
-    // 用于 GLUT 回调
+    // Used for GLUT Callback
     InputManager& getInputManager() { return *inputManager_; }
     bool shouldExit() const;
     

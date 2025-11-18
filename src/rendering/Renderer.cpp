@@ -29,6 +29,10 @@ void Renderer::clear() {
 
 void Renderer::draw3DView(const std::vector<RayHit>& rayHits, 
                           const Player& player, const Map& map) {
+    // Draw floor and ceiling background first
+    drawFloorTiled(player, map);
+    drawCeilingTiled(player, map);
+    
     int numRays = rayHits.size();
     
     for (int i = 0; i < numRays; ++i) {
@@ -43,36 +47,82 @@ void Renderer::draw3DView(const std::vector<RayHit>& rayHits,
         while (ca > Math::TWO_PI) ca -= Math::TWO_PI;
         
         float correctedDist = hit.distance * std::cos(ca);
+        correctedDist = std::max(correctedDist, RenderConfig::MIN_WALL_DISTANCE);
         
-        // draw wall, ceil and ground
-        drawWall(i, correctedDist, hit.isVertical, map);
+        // draw wall with texture
+        drawWall(i, correctedDist, hit, map);
         
-        // caculate the height of the wall
+        // calculate wall height
         float lineH = map.getTileSize() * screenHeight_ / correctedDist;
         lineH = std::min(lineH, static_cast<float>(screenHeight_));
         float lineO = (screenHeight_ / 2.0f) - lineH / 2.0f;
         
-        drawFloor(i, lineO + lineH, correctedDist, map);
         drawCeiling(i, lineO, correctedDist);
     }
 }
 
-void Renderer::drawWall(int screenX, float distance, bool isVertical, const Map& map) {
+void Renderer::drawWall(int screenX, float distance, const RayHit& hit, const Map& map) {
+    distance = std::max(distance, RenderConfig::MIN_WALL_DISTANCE);
     float lineH = map.getTileSize() * screenHeight_ / distance;
-    lineH = std::min(lineH, static_cast<float>(screenHeight_));
+    
+    // Calculate texture coordinates before clamping wall height
+    float texStartY = 0.0f;
+    float texEndY = 1.0f;
+    
+    // If wall is taller than screen, we need to clip texture coordinates
+    if (lineH > screenHeight_) {
+        float visibleRatio = screenHeight_ / lineH;
+        float clipAmount = (1.0f - visibleRatio) / 2.0f;
+        texStartY = clipAmount;
+        texEndY = 1.0f - clipAmount;
+        lineH = screenHeight_;
+    }
+    
     float lineO = (screenHeight_ / 2.0f) - lineH / 2.0f;
     
-    // set the color based on the direction of the wall
-    float brightness = isVertical ? 
-        RenderConfig::WALL_BRIGHTNESS_V : 
-        RenderConfig::WALL_BRIGHTNESS_H;
+    // Get texture for this wall type
+    GLuint texID = textureManager_.getTextureID(hit.wallType);
     
-    glColor3f(brightness, brightness, brightness);
-    glLineWidth(1.0f);
-    glBegin(GL_LINES);
-    glVertex2f(screenX, lineO);
-    glVertex2f(screenX, lineO + lineH);
-    glEnd();
+    if (texID > 0) {
+        // Draw textured wall
+        glEnable(GL_TEXTURE_2D);
+        glBindTexture(GL_TEXTURE_2D, texID);
+        
+        // Apply brightness based on wall orientation
+        float brightness = hit.isVertical ? 
+            RenderConfig::WALL_BRIGHTNESS_V : 
+            RenderConfig::WALL_BRIGHTNESS_H;
+        glColor3f(brightness, brightness, brightness);
+        
+        // Draw quad with correct texture coordinates
+        glBegin(GL_QUADS);
+        glTexCoord2f(hit.wallHitX, texStartY); 
+        glVertex2f(screenX, lineO);
+        
+        glTexCoord2f(hit.wallHitX, texEndY); 
+        glVertex2f(screenX, lineO + lineH);
+        
+        glTexCoord2f(hit.wallHitX, texEndY); 
+        glVertex2f(screenX + 1, lineO + lineH);
+        
+        glTexCoord2f(hit.wallHitX, texStartY); 
+        glVertex2f(screenX + 1, lineO);
+        glEnd();
+        
+        glDisable(GL_TEXTURE_2D);
+    } else {
+        // Fallback: draw colored wall if no texture
+        float brightness = hit.isVertical ? 
+            RenderConfig::WALL_BRIGHTNESS_V : 
+            RenderConfig::WALL_BRIGHTNESS_H;
+        
+        glColor3f(brightness, brightness, brightness);
+        glLineWidth(1.0f);
+        glBegin(GL_LINES);
+        glVertex2f(screenX, lineO);
+        glVertex2f(screenX, lineO + lineH);
+        glEnd();
+    }
 }
 
 void Renderer::drawFloor(int screenX, float wallBottom, float distance, const Map& map) {
@@ -145,6 +195,162 @@ void Renderer::drawText(int x, int y, const std::string& text) {
     for (char c : text) {
         glutBitmapCharacter(GLUT_BITMAP_HELVETICA_10, c);
     }
+}
+
+void Renderer::drawFloorTiled(const Player& player, const Map& map) {
+    // Get floor texture (using grass texture for floor)
+    GLuint floorTexID = textureManager_.getTextureID(5); // grass 
+    
+    if (floorTexID == 0) {
+        // Fallback: draw gray floor
+        glColor3f(0.3f, 0.3f, 0.3f);
+        glBegin(GL_QUADS);
+        glVertex2f(0, screenHeight_ / 2);
+        glVertex2f(screenWidth_, screenHeight_ / 2);
+        glVertex2f(screenWidth_, screenHeight_);
+        glVertex2f(0, screenHeight_);
+        glEnd();
+        return;
+    }
+    
+    glEnable(GL_TEXTURE_2D);
+    glBindTexture(GL_TEXTURE_2D, floorTexID);
+    
+    // Enable perspective correction hint for better texture quality
+    glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
+    
+    Vec2 playerPos = player.getPosition();
+    float playerAngle = player.getAngle();
+    float tileSize = map.getTileSize();
+    
+    // Calculate view frustum
+    float fovRad = GameConfig::FOV * Math::DEG_TO_RAD;
+    float leftAngle = playerAngle - fovRad / 2.0f;
+    float rightAngle = playerAngle + fovRad / 2.0f;
+    
+    // Apply brightness
+    float brightness = RenderConfig::FLOOR_BRIGHTNESS;
+    glColor3f(brightness, brightness, brightness);
+    
+    // Draw floor in multiple horizontal strips for better perspective
+    int numStrips = RenderConfig::FLOOR_STRIPS;  // More strips = better perspective but slower
+    float stripHeight = (screenHeight_ / 2.0f) / numStrips;
+    
+    for (int strip = 0; strip < numStrips; ++strip) {
+        float nearY = screenHeight_ / 2.0f + strip * stripHeight;
+        float farY = nearY + stripHeight;
+        
+        // Calculate distances for this strip
+        float nearDist = tileSize * (0.5f + strip * 0.5f);
+        float farDist = tileSize * (0.5f + (strip + 1) * 0.5f);
+        
+        // Calculate world coordinates for strip corners
+        float nearLeftX = playerPos.x + std::cos(leftAngle) * nearDist;
+        float nearLeftY = playerPos.y + std::sin(leftAngle) * nearDist;
+        float nearRightX = playerPos.x + std::cos(rightAngle) * nearDist;
+        float nearRightY = playerPos.y + std::sin(rightAngle) * nearDist;
+        
+        float farLeftX = playerPos.x + std::cos(leftAngle) * farDist;
+        float farLeftY = playerPos.y + std::sin(leftAngle) * farDist;
+        float farRightX = playerPos.x + std::cos(rightAngle) * farDist;
+        float farRightY = playerPos.y + std::sin(rightAngle) * farDist;
+        
+        // Draw strip
+        glBegin(GL_QUADS);
+        glTexCoord2f(nearLeftX / tileSize, nearLeftY / tileSize);
+        glVertex2f(0, nearY);
+        
+        glTexCoord2f(nearRightX / tileSize, nearRightY / tileSize);
+        glVertex2f(screenWidth_, nearY);
+        
+        glTexCoord2f(farRightX / tileSize, farRightY / tileSize);
+        glVertex2f(screenWidth_, farY);
+        
+        glTexCoord2f(farLeftX / tileSize, farLeftY / tileSize);
+        glVertex2f(0, farY);
+        glEnd();
+    }
+    
+    glDisable(GL_TEXTURE_2D);
+}
+
+void Renderer::drawCeilingTiled(const Player& player, const Map& map) {
+    // Get ceiling texture (using dark ceiling texture)
+    GLuint ceilingTexID = textureManager_.getTextureID(7); // ceiling
+    
+    if (ceilingTexID == 0) {
+        // Fallback: draw dark gray ceiling
+        glColor3f(0.15f, 0.15f, 0.15f);
+        glBegin(GL_QUADS);
+        glVertex2f(0, 0);
+        glVertex2f(screenWidth_, 0);
+        glVertex2f(screenWidth_, screenHeight_ / 2);
+        glVertex2f(0, screenHeight_ / 2);
+        glEnd();
+        return;
+    }
+    
+    glEnable(GL_TEXTURE_2D);
+    glBindTexture(GL_TEXTURE_2D, ceilingTexID);
+    
+    // Enable perspective correction hint for better texture quality
+    glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
+    
+    Vec2 playerPos = player.getPosition();
+    float playerAngle = player.getAngle();
+    float tileSize = map.getTileSize();
+    
+    // Calculate view frustum
+    float fovRad = GameConfig::FOV * Math::DEG_TO_RAD;
+    float leftAngle = playerAngle - fovRad / 2.0f;
+    float rightAngle = playerAngle + fovRad / 2.0f;
+    
+    // Apply brightness
+    float brightness = RenderConfig::CEILING_BRIGHTNESS;
+    glColor3f(brightness, brightness, brightness);
+    
+    // Draw ceiling in multiple horizontal strips for better perspective
+    int numStrips = RenderConfig::FLOOR_STRIPS;
+    float stripHeight = (screenHeight_ / 2.0f) / numStrips;
+    
+    for (int strip = 0; strip < numStrips; ++strip) {
+        // Ceiling goes from top (0) to middle (screenHeight/2)
+        // Reverse order: strip 0 is farthest, strip N is nearest
+        float farY = strip * stripHeight;
+        float nearY = farY + stripHeight;
+        
+        // Calculate distances (reversed for ceiling)
+        float farDist = tileSize * (0.5f + (numStrips - strip - 1) * 0.5f);
+        float nearDist = tileSize * (0.5f + (numStrips - strip) * 0.5f);
+        
+        // Calculate world coordinates for strip corners
+        float farLeftX = playerPos.x + std::cos(leftAngle) * farDist;
+        float farLeftY = playerPos.y + std::sin(leftAngle) * farDist;
+        float farRightX = playerPos.x + std::cos(rightAngle) * farDist;
+        float farRightY = playerPos.y + std::sin(rightAngle) * farDist;
+        
+        float nearLeftX = playerPos.x + std::cos(leftAngle) * nearDist;
+        float nearLeftY = playerPos.y + std::sin(leftAngle) * nearDist;
+        float nearRightX = playerPos.x + std::cos(rightAngle) * nearDist;
+        float nearRightY = playerPos.y + std::sin(rightAngle) * nearDist;
+        
+        // Draw strip
+        glBegin(GL_QUADS);
+        glTexCoord2f(farLeftX / tileSize, farLeftY / tileSize);
+        glVertex2f(0, farY);
+        
+        glTexCoord2f(farRightX / tileSize, farRightY / tileSize);
+        glVertex2f(screenWidth_, farY);
+        
+        glTexCoord2f(nearRightX / tileSize, nearRightY / tileSize);
+        glVertex2f(screenWidth_, nearY);
+        
+        glTexCoord2f(nearLeftX / tileSize, nearLeftY / tileSize);
+        glVertex2f(0, nearY);
+        glEnd();
+    }
+    
+    glDisable(GL_TEXTURE_2D);
 }
 
 void Renderer::present() {
