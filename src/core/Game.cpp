@@ -44,10 +44,12 @@ void Game::init() {
     
     // create the player
     float moveSpeed = GameConfig::MOVE_SPEED_FACTOR * tileSize;
+    int health = PlayerConfig::HEALTH;
     player_ = std::make_unique<Player>(
         map_->getInitPosition(),
         0.0f,  // initial angle
-        moveSpeed
+        moveSpeed,
+        health
     );
     
     // create the raycaster instance
@@ -138,6 +140,8 @@ void Game::render() {
     
     // render debug information
     renderer_->drawDebugInfo(*player_, inputManager_->shouldShowInfo());
+    
+    renderer_->drawHealthBar(*player_);
     
     renderer_->present();
 }

@@ -188,6 +188,14 @@ void Renderer::drawDebugInfo(const Player& player, bool show) {
     drawText(5, 35, oss.str());
 }
 
+void Renderer::drawHealthBar(const Player& player) {
+    std::ostringstream oss;
+    
+    oss << "Health: " << player.getHealth();
+    drawText(5, 15, oss.str());
+
+}
+
 void Renderer::drawText(int x, int y, const std::string& text) {
     glColor3f(1.0f, 1.0f, 1.0f);
     glRasterPos2i(x, y);

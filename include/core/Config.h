@@ -32,4 +32,8 @@ namespace RenderConfig {
     constexpr int FLOOR_STRIPS = 8;  // Number of horizontal strips for floor rendering (higher = better quality)
 }
 
+namespace PlayerConfig {
+    constexpr int HEALTH = 100;
+}
+
 #endif // CONFIG_H
