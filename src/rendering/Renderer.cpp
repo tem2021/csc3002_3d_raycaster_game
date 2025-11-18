@@ -151,52 +151,88 @@ void Renderer::drawText(int x, int y, const std::string& text) {
 void Renderer::drawEnemies3D(const std::vector<Enemy>& enemies,
                              const Player& player,
                              const Map& map,
-                             const std::vector<RayHit>& rayHits) 
+                             const std::vector<RayHit>& rayHits)
 {
     int numRays = rayHits.size();
     float fov = GameConfig::FOV * Math::DEG_TO_RAD;
 
-    for (const auto& enemy : enemies) {
-        Vec2 ep = enemy.getPosition();
-        Vec2 pp = player.getPosition();
+    // ------ 1. 按距离排序：远的先画 ------
+    struct EnemyInfo {
+        const Enemy* e;
+        float dist;
+        float angle;
+    };
 
+    std::vector<EnemyInfo> sorted;
+    sorted.reserve(enemies.size());
+
+    Vec2 pp = player.getPosition();
+
+    for (const auto& e : enemies) {
+        Vec2 ep = e.getPosition();
         float dx = ep.x - pp.x;
         float dy = ep.y - pp.y;
         float dist = std::sqrt(dx*dx + dy*dy);
 
-        // angle enemy → player
-        float enemyAngle = std::atan2(dy, dx) - player.getAngle();
+        float angle = std::atan2(dy, dx) - player.getAngle();
+        while (angle < -Math::PI) angle += Math::TWO_PI;
+        while (angle >  Math::PI) angle -= Math::TWO_PI;
 
-        while (enemyAngle < -Math::PI) enemyAngle += Math::TWO_PI;
-        while (enemyAngle >  Math::PI) enemyAngle -= Math::TWO_PI;
+        // 不在视野就跳过
+        if (std::fabs(angle) > fov/2) continue;
 
-        if (std::fabs(enemyAngle) > fov / 2) continue;  // 不在视野内
+        sorted.push_back({ &e, dist, angle });
+    }
 
-        // mapping to ray index
+    // 按距离从远到近排序
+    std::sort(sorted.begin(), sorted.end(),
+              [](auto& a, auto& b){ return a.dist > b.dist; });
+
+
+    // ------ 2. 对每个敌人逐列渲染 ------
+    for (auto& info : sorted) {
+        const Enemy* enemy = info.e;
+        float dist = info.dist;
+        float enemyAngle = info.angle;
+
+        // 屏幕 X 中心位置（对应射线）
         float ratio = (enemyAngle + fov/2) / fov;
-        int rayId = ratio * numRays;
-        if (rayId < 0 || rayId >= numRays) continue;
+        int centerRay = ratio * numRays;
 
-        // 若被墙挡住 → 不画
-        if (rayHits[rayId].hit && rayHits[rayId].distance < dist) 
+        if (centerRay < 0 || centerRay >= numRays)
             continue;
 
-
+        // sprite 大小
         float height = map.getTileSize() * screenHeight_ / dist;
+        float half = height * 0.5f;
+
+        int spriteScreenWidth = (int)height; // 方块怪物：宽度=高度
+
+        float screenCenterX = (float)centerRay / numRays * screenWidth_;
         float centerY = screenHeight_ / 2;
 
-        float x = (float)rayId / numRays * screenWidth_;
-        float half = height / 2;
+        // ------ 逐列渲染 ------ 
+        for (int xOffset = -spriteScreenWidth/2; xOffset <= spriteScreenWidth/2; xOffset++) {
+            int rayId = centerRay + (xOffset * numRays / screenWidth_);
+            if (rayId < 0 || rayId >= numRays) continue;
 
-        glColor3f(1, 0, 0);   // 红色
-        glBegin(GL_QUADS);
-        glVertex2f(x - half, centerY - half);
-        glVertex2f(x + half, centerY - half);
-        glVertex2f(x + half, centerY + half);
-        glVertex2f(x - half, centerY + half);
-        glEnd();
+            // 用射线判断墙是否挡住这“一列”
+            if (rayHits[rayId].hit && rayHits[rayId].distance < dist)
+                continue;   // 这一列被墙挡住 → 不画
+
+            float screenX = screenCenterX + xOffset;
+
+            // 画这一列
+            glColor3f(1, 0, 0);
+            glBegin(GL_LINES);
+            glVertex2f(screenX, centerY - half);
+            glVertex2f(screenX, centerY + half);
+            glEnd();
+        }
     }
 }
+
+
 
 
 void Renderer::present() {
