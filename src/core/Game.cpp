@@ -9,6 +9,7 @@
 #include "data/textures/stone.h"
 #include "data/textures/marble.h"
 #include "data/textures/grass.h"
+#include "data/textures/ceiling.h"
 #include "data/textures/CUHK_SZ.h"
 #include "data/textures/Hajimi.h"
 
@@ -76,6 +77,7 @@ void Game::loadTextures() {
     texManager.loadTexture(3, METAL_DATA);
     texManager.loadTexture(4, STONE_DATA);
     texManager.loadTexture(5, GRASS_DATA);    // Floor texture
+    texManager.loadTexture(7, CEILING_DATA);  // Ceiling texture
     texManager.loadTexture(8, MARBLE_DATA);
     texManager.loadTexture(100, CUHK_SZ_DATA);
     texManager.loadTexture(101, HAJIMI_DATA);

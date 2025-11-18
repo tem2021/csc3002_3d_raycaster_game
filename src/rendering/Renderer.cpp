@@ -29,8 +29,9 @@ void Renderer::clear() {
 
 void Renderer::draw3DView(const std::vector<RayHit>& rayHits, 
                           const Player& player, const Map& map) {
-    // Draw floor background first
+    // Draw floor and ceiling background first
     drawFloorTiled(player, map);
+    drawCeilingTiled(player, map);
     
     int numRays = rayHits.size();
     
@@ -198,7 +199,7 @@ void Renderer::drawText(int x, int y, const std::string& text) {
 
 void Renderer::drawFloorTiled(const Player& player, const Map& map) {
     // Get floor texture (using grass texture for floor)
-    GLuint floorTexID = textureManager_.getTextureID(5); 
+    GLuint floorTexID = textureManager_.getTextureID(5); // grass 
     
     if (floorTexID == 0) {
         // Fallback: draw gray floor
@@ -267,6 +268,85 @@ void Renderer::drawFloorTiled(const Player& player, const Map& map) {
         
         glTexCoord2f(farLeftX / tileSize, farLeftY / tileSize);
         glVertex2f(0, farY);
+        glEnd();
+    }
+    
+    glDisable(GL_TEXTURE_2D);
+}
+
+void Renderer::drawCeilingTiled(const Player& player, const Map& map) {
+    // Get ceiling texture (using dark ceiling texture)
+    GLuint ceilingTexID = textureManager_.getTextureID(7); // ceiling
+    
+    if (ceilingTexID == 0) {
+        // Fallback: draw dark gray ceiling
+        glColor3f(0.15f, 0.15f, 0.15f);
+        glBegin(GL_QUADS);
+        glVertex2f(0, 0);
+        glVertex2f(screenWidth_, 0);
+        glVertex2f(screenWidth_, screenHeight_ / 2);
+        glVertex2f(0, screenHeight_ / 2);
+        glEnd();
+        return;
+    }
+    
+    glEnable(GL_TEXTURE_2D);
+    glBindTexture(GL_TEXTURE_2D, ceilingTexID);
+    
+    // Enable perspective correction hint for better texture quality
+    glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
+    
+    Vec2 playerPos = player.getPosition();
+    float playerAngle = player.getAngle();
+    float tileSize = map.getTileSize();
+    
+    // Calculate view frustum
+    float fovRad = GameConfig::FOV * Math::DEG_TO_RAD;
+    float leftAngle = playerAngle - fovRad / 2.0f;
+    float rightAngle = playerAngle + fovRad / 2.0f;
+    
+    // Apply brightness
+    float brightness = RenderConfig::CEILING_BRIGHTNESS;
+    glColor3f(brightness, brightness, brightness);
+    
+    // Draw ceiling in multiple horizontal strips for better perspective
+    int numStrips = RenderConfig::FLOOR_STRIPS;
+    float stripHeight = (screenHeight_ / 2.0f) / numStrips;
+    
+    for (int strip = 0; strip < numStrips; ++strip) {
+        // Ceiling goes from top (0) to middle (screenHeight/2)
+        // Reverse order: strip 0 is farthest, strip N is nearest
+        float farY = strip * stripHeight;
+        float nearY = farY + stripHeight;
+        
+        // Calculate distances (reversed for ceiling)
+        float farDist = tileSize * (0.5f + (numStrips - strip - 1) * 0.5f);
+        float nearDist = tileSize * (0.5f + (numStrips - strip) * 0.5f);
+        
+        // Calculate world coordinates for strip corners
+        float farLeftX = playerPos.x + std::cos(leftAngle) * farDist;
+        float farLeftY = playerPos.y + std::sin(leftAngle) * farDist;
+        float farRightX = playerPos.x + std::cos(rightAngle) * farDist;
+        float farRightY = playerPos.y + std::sin(rightAngle) * farDist;
+        
+        float nearLeftX = playerPos.x + std::cos(leftAngle) * nearDist;
+        float nearLeftY = playerPos.y + std::sin(leftAngle) * nearDist;
+        float nearRightX = playerPos.x + std::cos(rightAngle) * nearDist;
+        float nearRightY = playerPos.y + std::sin(rightAngle) * nearDist;
+        
+        // Draw strip
+        glBegin(GL_QUADS);
+        glTexCoord2f(farLeftX / tileSize, farLeftY / tileSize);
+        glVertex2f(0, farY);
+        
+        glTexCoord2f(farRightX / tileSize, farRightY / tileSize);
+        glVertex2f(screenWidth_, farY);
+        
+        glTexCoord2f(nearRightX / tileSize, nearRightY / tileSize);
+        glVertex2f(screenWidth_, nearY);
+        
+        glTexCoord2f(nearLeftX / tileSize, nearLeftY / tileSize);
+        glVertex2f(0, nearY);
         glEnd();
     }
     

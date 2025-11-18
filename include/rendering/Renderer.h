@@ -37,6 +37,7 @@ private:
     void drawFloor(int screenX, float wallBottom, float distance, const Map& map);
     void drawCeiling(int screenX, float wallTop, float distance);
     void drawFloorTiled(const Player& player, const Map& map);
+    void drawCeilingTiled(const Player& player, const Map& map);
 };
 
 #endif // RENDERER_H
