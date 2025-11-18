@@ -29,6 +29,7 @@ namespace RenderConfig {
     constexpr float MAX_FLOOR_DIST = 10.0f;
     constexpr float CROSSHAIR_SIZE = 0.01f;
     constexpr float MIN_WALL_DISTANCE = 0.1f;  // Minimum distance to prevent texture distortion
+    constexpr int FLOOR_STRIPS = 8;  // Number of horizontal strips for floor rendering (higher = better quality)
 }
 
 #endif // CONFIG_H

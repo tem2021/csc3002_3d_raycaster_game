@@ -6,6 +6,7 @@
 #include "data/textures/wood.h"
 #include "data/textures/brick.h"
 #include "data/textures/metal.h"
+#include "data/textures/grass.h"
 #include "data/textures/CUHK_SZ.h"
 #include "data/textures/Hajimi.h"
 
@@ -71,6 +72,7 @@ void Game::loadTextures() {
     texManager.loadTexture(1, BRICK_DATA);
     texManager.loadTexture(2, WOOD_DATA);
     texManager.loadTexture(3, METAL_DATA);
+    texManager.loadTexture(6, GRASS_DATA);    // Floor texture
     texManager.loadTexture(100, CUHK_SZ_DATA);
     texManager.loadTexture(101, HAJIMI_DATA);
     
