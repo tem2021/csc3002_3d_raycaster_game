@@ -3,7 +3,8 @@
 		"glut.h": "c",
 		"freeglut_std.h": "c",
 		"freeglut.h": "c",
-		"math.h": "c"
+		"math.h": "c",
+		"ios": "cpp"
 	},
 	"C_Cpp.default.compileCommands": "${workspaceFolder}/build/compile_commands.json"
 }
