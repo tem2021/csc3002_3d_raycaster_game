@@ -111,34 +111,24 @@ Example:
 
 ---
 
-## Using Assets in C++
+## How to Use Textures?
 
-### Load Map
-```cpp
-#include "data/maps/level1.h"
+### For Wall Textures
 
-int wallType = MapData::LEVEL1_MAP[y][x];  // 0 = empty, 1-255 = texture ID
-int spawnX = MapData::LEVEL1_PLAYER_X;
-int spawnY = MapData::LEVEL1_PLAYER_Y;
+1. Creat/Edit Textures: Use texture_editor.py 
+2. Map Textures: Use texture_mapping.txt  (see file structure below) 
+3. Modify the Wall Textures: Use map_editor.py (you can only use the textures configured in texture_mapping.txt 
+
+At this step, you finish the editing of .h files (Maps and Textures). You can use them in the Program then 
+
+4. Modify the Game.cpp
+
+```
+Line 5: include the texture data here 
+Line 71: Load the texture with Texture Manager
 ```
 
-### Load Texture
-```cpp
-#include "data/textures/brick.h"
-
-unsigned char r = BRICK_DATA[y][x][0];  // Red channel
-unsigned char g = BRICK_DATA[y][x][1];  // Green channel
-unsigned char b = BRICK_DATA[y][x][2];  // Blue channel
-```
-
-### Render Wall with Texture
-```cpp
-int textureID = MapData::LEVEL1_MAP[y][x];
-if (textureID > 0) {
-    // Load texture based on texture_mapping.txt
-    // Use TEXTURE_DATA[y][x] to get RGB values
-}
-```
+Then you finish the editing of wall textures
 
 ---
 
