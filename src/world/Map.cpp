@@ -14,8 +14,8 @@ Map::Map(const int sourceMap[MAX_HEIGHT][MAX_WIDTH],
     }
     
     // calculate the initial position (centered at the square)
-    initPosition_.x = tileSize_ * (initX - 0.5f);
-    initPosition_.y = tileSize_ * (initY - 0.5f);
+    initPosition_.x = tileSize_ * (initX + 0.5f);
+    initPosition_.y = tileSize_ * (initY + 0.5f);
 }
 
 bool Map::isWall(int x, int y) const {

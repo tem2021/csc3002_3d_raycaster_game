@@ -5,7 +5,7 @@ namespace MapData {
     constexpr int LEVEL1_WIDTH = 64;
     constexpr int LEVEL1_HEIGHT = 64;
     constexpr int LEVEL1_INIT_X = 2;
-    constexpr int LEVEL1_INIT_Y = 12;
+    constexpr int LEVEL1_INIT_Y = 10;
 
     static int LEVEL1[LEVEL1_HEIGHT][LEVEL1_WIDTH] = {
         {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
