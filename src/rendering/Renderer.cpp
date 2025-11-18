@@ -24,11 +24,14 @@ Renderer::Renderer(int screenWidth, int screenHeight)
 }
 
 void Renderer::clear() {
+    // clear the depth and color buffer for each pixel
+    // the clear method is defined by glClearColor & glClearDepth
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
 void Renderer::draw3DView(const std::vector<RayHit>& rayHits, 
                           const Player& player, const Map& map) {
+   
     // Draw floor and ceiling background first
     drawFloorTiled(player, map);
     drawCeilingTiled(player, map);
@@ -36,17 +39,25 @@ void Renderer::draw3DView(const std::vector<RayHit>& rayHits,
     int numRays = rayHits.size();
     
     for (int i = 0; i < numRays; ++i) {
+
+        // alia the rayHits[i] as hit
         const RayHit& hit = rayHits[i];
         
         if (!hit.hit) continue;
         
-        float rayAngle = player.getAngle() - (GameConfig::FOV * Math::DEG_TO_RAD / 2.0f) + 
-                        (i * GameConfig::FOV * Math::DEG_TO_RAD / numRays);
+        float rayAngle = 
+        player.getAngle() - (GameConfig::FOV * Math::DEG_TO_RAD / 2.0f) + 
+        (i * GameConfig::FOV * Math::DEG_TO_RAD / numRays);
+
         float ca = player.getAngle() - rayAngle;
+
         while (ca < 0.0f) ca += Math::TWO_PI;
         while (ca > Math::TWO_PI) ca -= Math::TWO_PI;
         
+        // linearlize the distance (i.e the distance of projection on the casting ray of the player's angle)
         float correctedDist = hit.distance * std::cos(ca);
+
+        // ensure the correctness of rendering wall textures when player is very close to the wall
         correctedDist = std::max(correctedDist, RenderConfig::MIN_WALL_DISTANCE);
         
         // draw wall with texture

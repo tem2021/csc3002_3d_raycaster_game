@@ -5,6 +5,9 @@
 Raycaster::Raycaster(const Map& map) : map_(map) {}
 
 std::vector<RayHit> Raycaster::castRays(const Vec2& origin, float startAngle, float fov, int numRays) const {
+    // use the vector to store all RayHits for every angles 
+    // casting-Ray's angle : from player's angle - fov/2 to player's angle to fov/2
+
     std::vector<RayHit> hits;
     hits.reserve(numRays);
     
@@ -114,17 +117,24 @@ RayHit Raycaster::checkVerticalIntersections(const Vec2& origin, float angle) co
     
     float rx, ry, xo, yo;
     
-    if (angle > Math::HALF_PI && angle < Math::HALF_PI * 3) {  // 朝左
+    // point left
+    if (angle > Math::HALF_PI && angle < Math::HALF_PI * 3) {  
         rx = (static_cast<int>(origin.x) / mapS) * mapS - epsilon;
         ry = (rx - origin.x) * std::tan(angle) + origin.y;
         xo = -mapS;
         yo = xo * std::tan(angle);
-    } else if (angle < Math::HALF_PI || angle > Math::HALF_PI * 3) {  // 朝右
+    } 
+    
+    // point right
+    else if (angle < Math::HALF_PI || angle > Math::HALF_PI * 3) {  
         rx = (static_cast<int>(origin.x) / mapS) * mapS + mapS + epsilon;
         ry = (rx - origin.x) * std::tan(angle) + origin.y;
         xo = mapS;
         yo = xo * std::tan(angle);
-    } else {  // 垂直方向
+    } 
+    
+    // point vertically
+    else { 
         return hit;
     }
     
@@ -141,8 +151,7 @@ RayHit Raycaster::checkVerticalIntersections(const Vec2& origin, float angle) co
             hit.distance = origin.distanceTo(hit.hitPoint);
             hit.isVertical = true;
             hit.wallType = map_.getWallType(mx, my);
-            // 计算墙面碰撞的Y坐标 (0.0-1.0)
-            hit.wallHitX = ry / mapS - std::floor(ry / mapS);
+            hit.wallHitX = ry / mapS - my;
             break;
         }
         
