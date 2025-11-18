@@ -24,6 +24,8 @@ public:
     bool shouldExit() const;
     
 private:
+    
+    //Owning pointers to core components
     std::unique_ptr<Player> player_;
     std::unique_ptr<Map> map_;
     std::unique_ptr<Raycaster> raycaster_;

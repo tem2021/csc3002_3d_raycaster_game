@@ -3,15 +3,19 @@
 #include "data/maps/level1.h"
 
 // Include texture data (only those with 3D array format)
-#include "data/textures/wood.h"
 #include "data/textures/brick.h"
+#include "data/textures/wood.h"
 #include "data/textures/metal.h"
 #include "data/textures/stone.h"
-#include "data/textures/marble.h"
 #include "data/textures/grass.h"
-#include "data/textures/ceiling.h"
+#include "data/textures/dirt.h"
+#include "data/textures/glass.h"
+#include "data/textures/marble.h"
+#include "data/textures/concrete.h"
 #include "data/textures/CUHK_SZ.h"
 #include "data/textures/Hajimi.h"
+
+#include "data/textures/ceiling.h"
 #include "rendering/TextureManager.h"
 
 #include <GL/freeglut_std.h>
@@ -72,6 +76,7 @@ void Game::init() {
 void Game::loadTextures() {
     std::cout << "Loading textures..." << std::endl;
     
+    // get the textureManager from renderer
     TextureManager& texManager = renderer_->getTextureManager();
     
     // Load textures with their IDs (matching map data)
@@ -80,8 +85,11 @@ void Game::loadTextures() {
     texManager.loadTexture(3, METAL_DATA);
     texManager.loadTexture(4, STONE_DATA);
     texManager.loadTexture(5, GRASS_DATA);    // Floor texture
-    texManager.loadTexture(7, CEILING_DATA);  // Ceiling texture
+    texManager.loadTexture(6, DIRT_DATA);
+    texManager.loadTexture(7, GLASS_DATA); 
     texManager.loadTexture(8, MARBLE_DATA);
+    texManager.loadTexture(9, CONCRETE_DATA);
+    texManager.loadTexture(50, CEILING_DATA);
     texManager.loadTexture(100, CUHK_SZ_DATA);
     texManager.loadTexture(101, HAJIMI_DATA);
     

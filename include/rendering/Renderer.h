@@ -32,6 +32,7 @@ private:
     int centerX_;
     int centerY_;
     
+    // initialize the TextureManager in Renderer
     TextureManager textureManager_;
     
     void drawText(int x, int y, const std::string& text);

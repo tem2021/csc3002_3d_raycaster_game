@@ -17,6 +17,8 @@
 #include <cmath>
 #include <algorithm>
 
+// In this Renderer, I use the old styled fixed-function pipeline API (Legacy OpenGL)
+
 Renderer::Renderer(int screenWidth, int screenHeight)
     : screenWidth_(screenWidth), screenHeight_(screenHeight) {
     centerX_ = screenWidth_ / 2;
@@ -93,13 +95,16 @@ void Renderer::drawWall(int screenX, float distance, const RayHit& hit, const Ma
     
     if (texID > 0) {
         // Draw textured wall
+        // use default texture unit 0; No shader
         glEnable(GL_TEXTURE_2D);
         glBindTexture(GL_TEXTURE_2D, texID);
-        
+            
         // Apply brightness based on wall orientation
         float brightness = hit.isVertical ? 
             RenderConfig::WALL_BRIGHTNESS_V : 
             RenderConfig::WALL_BRIGHTNESS_H;
+
+        //textureColor Union brightness -> Actual color [Under GL_MODULATE]
         glColor3f(brightness, brightness, brightness);
         
         // Draw quad with correct texture coordinates with counter-clockwise
@@ -116,23 +121,9 @@ void Renderer::drawWall(int screenX, float distance, const RayHit& hit, const Ma
         glTexCoord2f(hit.wallHitX, texStartY); 
         glVertex2f(screenX + 1, lineO);
         glEnd();
-        
+
         glDisable(GL_TEXTURE_2D);
     } 
-    
-    // usually impossible to have texID = 0; just write here in case  
-    else {
-        float brightness = hit.isVertical ? 
-            RenderConfig::WALL_BRIGHTNESS_V : 
-            RenderConfig::WALL_BRIGHTNESS_H;
-        
-        glColor3f(brightness, brightness, brightness);
-        glLineWidth(1.0f);
-        glBegin(GL_LINES);
-        glVertex2f(screenX, lineO);
-        glVertex2f(screenX, lineO + lineH);
-        glEnd();
-    }
 }
 
 void Renderer::drawCrosshair() {
@@ -329,7 +320,7 @@ void Renderer::drawFloorTiled(const Player& player, const Map& map) {
 
 void Renderer::drawCeilingTiled(const Player& player, const Map& map) {
     // Get ceiling texture (using dark ceiling texture)
-    GLuint ceilingTexID = textureManager_.getTextureID(7); // ceiling
+    GLuint ceilingTexID = textureManager_.getTextureID(50); // ceiling
     
     if (ceilingTexID == 0) {
         // Fallback: draw dark gray ceiling
