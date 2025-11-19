@@ -73,7 +73,14 @@ void Renderer::drawWall(int screenX, float distance, const RayHit& hit, const Ma
     // this is the direct result of the Perspective Projection 
     // the increasing of the angle is suffcient small, hence the endpoints of the rays moves 
     // approximately the same distance each time 
-    float lineH = map.getTileSize() * screenHeight_ / distance;
+    
+    // Apply aspect ratio correction to keep walls square regardless of window size
+    // this equation is getted based on our construction
+    
+    float aspectRatio 
+    = static_cast<float>(screenWidth_) / ( 2 * std::tan(GameConfig::FOV / 2 * Math::DEG_TO_RAD)) / static_cast<float>(screenHeight_);
+
+    float lineH = (map.getTileSize() * screenHeight_ / distance) * aspectRatio;
     
     // calculate texture coordinates for each hit
     float texStartY = 0.0f;
