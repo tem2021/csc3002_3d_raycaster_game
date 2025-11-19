@@ -23,13 +23,16 @@ namespace GameConfig {
 namespace RenderConfig {
     constexpr float WALL_BRIGHTNESS_H = 0.8f;  // BRIGHTNESS_OF_HORIZONTAL_WALL
     constexpr float WALL_BRIGHTNESS_V = 0.6f;  // BRIGHTNESS_OF_VERTICAL_WALL
-    constexpr float FLOOR_BRIGHTNESS = 0.3f;
-    constexpr float CEILING_BRIGHTNESS = 0.2f;
+    constexpr float FLOOR_BRIGHTNESS = 0.5f;
+    constexpr float CEILING_BRIGHTNESS = 0.3f;
     constexpr float MIN_BRIGHTNESS = 0.15f;
     constexpr float MAX_FLOOR_DIST = 10.0f;
     constexpr float CROSSHAIR_SIZE = 0.01f;
     constexpr float MIN_WALL_DISTANCE = 0.1f;  // Minimum distance to prevent texture distortion
-    constexpr int FLOOR_STRIPS = 8;  // Number of horizontal strips for floor rendering (higher = better quality)
+    constexpr int FLOOR_STRIPS = 32;  // Increased for smoother perspective
+    constexpr float PLAYER_EYE_HEIGHT = 0.5f;  // Player eye height relative to tile size
+    constexpr float FOG_START = 5.0f;  // Distance where fog starts
+    constexpr float FOG_END = 15.0f;  // Distance where fog is maximum
 }
 
 namespace PlayerConfig {

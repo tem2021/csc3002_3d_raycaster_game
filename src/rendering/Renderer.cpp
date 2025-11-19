@@ -323,41 +323,40 @@ void Renderer::drawEnemies3D(const std::vector<Enemy>& enemies,
 
 
 void Renderer::drawFloorTiled(const Player& player, const Map& map) {
-    // Get floor texture (using grass texture for floor)
-    GLuint floorTexID = textureManager_.getTextureID(5); // grass 
+    GLuint floorTexID = textureManager_.getTextureID(4);
     glEnable(GL_TEXTURE_2D);
     glBindTexture(GL_TEXTURE_2D, floorTexID);
-    
-    // Hint GPU to use perspective-correct interpolation (legacy GL)
     glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
     
     Vec2 playerPos = player.getPosition();
     float playerAngle = player.getAngle();
     float tileSize = map.getTileSize();
+    float eyeHeight = tileSize * RenderConfig::PLAYER_EYE_HEIGHT;
     
-    // Calculate view frustum
     float fovRad = GameConfig::FOV * Math::DEG_TO_RAD;
     float leftAngle = playerAngle - fovRad / 2.0f;
     float rightAngle = playerAngle + fovRad / 2.0f;
     
-    // Apply brightness
-    float brightness = RenderConfig::FLOOR_BRIGHTNESS;
-    glColor3f(brightness, brightness, brightness);
-    
-    // Draw floor in multiple horizontal strips 
-    // More strips = better perspective but slower
-    int numStrips = RenderConfig::FLOOR_STRIPS;  
+    int numStrips = RenderConfig::FLOOR_STRIPS;
     float stripHeight = (screenHeight_ / 2.0f) / numStrips;
     
     for (int strip = 0; strip < numStrips; strip++) {
         float nearY = screenHeight_ / 2.0f + strip * stripHeight;
         float farY = nearY + stripHeight;
         
-        // Calculate distances for this strip
-        float nearDist = tileSize * (0.5f + strip * 0.5f);
-        float farDist = tileSize * (0.5f + (strip + 1) * 0.5f);
+        // Improved perspective-correct distance calculation
+        // Based on eye height and screen position
+        float nearScreenRatio = (nearY - screenHeight_ / 2.0f) / (screenHeight_ / 2.0f);
+        float farScreenRatio = (farY - screenHeight_ / 2.0f) / (screenHeight_ / 2.0f);
         
-        // Calculate world coordinates for strip corners
+        // Prevent division by zero for horizon line
+        nearScreenRatio = std::max(nearScreenRatio, 0.001f);
+        farScreenRatio = std::max(farScreenRatio, 0.001f);
+        
+        float nearDist = eyeHeight / nearScreenRatio;
+        float farDist = eyeHeight / farScreenRatio;
+        
+        // Calculate world positions for each corner
         float nearLeftX = playerPos.x + std::cos(leftAngle) * nearDist;
         float nearLeftY = playerPos.y + std::sin(leftAngle) * nearDist;
         float nearRightX = playerPos.x + std::cos(rightAngle) * nearDist;
@@ -368,7 +367,10 @@ void Renderer::drawFloorTiled(const Player& player, const Map& map) {
         float farRightX = playerPos.x + std::cos(rightAngle) * farDist;
         float farRightY = playerPos.y + std::sin(rightAngle) * farDist;
         
-        // Draw strip
+        float brightness = RenderConfig::FLOOR_BRIGHTNESS;
+        glColor3f(brightness, brightness, brightness);
+        
+        // Use world coordinates directly for texture mapping
         glBegin(GL_QUADS);
         glTexCoord2f(nearLeftX / tileSize, nearLeftY / tileSize);
         glVertex2f(0, nearY);
@@ -388,43 +390,39 @@ void Renderer::drawFloorTiled(const Player& player, const Map& map) {
 }
 
 void Renderer::drawCeilingTiled(const Player& player, const Map& map) {
-    // Get ceiling texture (using dark ceiling texture)
-    GLuint ceilingTexID = textureManager_.getTextureID(50); // ceiling
+    GLuint ceilingTexID = textureManager_.getTextureID(50);
     
     glEnable(GL_TEXTURE_2D);
     glBindTexture(GL_TEXTURE_2D, ceilingTexID);
-    
-    // Enable perspective correction hint for better texture quality
     glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
     
     Vec2 playerPos = player.getPosition();
     float playerAngle = player.getAngle();
     float tileSize = map.getTileSize();
+    float eyeHeight = tileSize * RenderConfig::PLAYER_EYE_HEIGHT;
     
-    // Calculate view frustum
     float fovRad = GameConfig::FOV * Math::DEG_TO_RAD;
     float leftAngle = playerAngle - fovRad / 2.0f;
     float rightAngle = playerAngle + fovRad / 2.0f;
     
-    // Apply brightness
-    float brightness = RenderConfig::CEILING_BRIGHTNESS;
-    glColor3f(brightness, brightness, brightness);
-    
-    // Draw ceiling in multiple horizontal strips for better perspective
     int numStrips = RenderConfig::FLOOR_STRIPS;
     float stripHeight = (screenHeight_ / 2.0f) / numStrips;
     
     for (int strip = 0; strip < numStrips; ++strip) {
-        // Ceiling goes from top (0) to middle (screenHeight/2)
-        // Reverse order: strip 0 is farthest, strip N is nearest
         float farY = strip * stripHeight;
         float nearY = farY + stripHeight;
         
-        // Calculate distances (reversed for ceiling)
-        float farDist = tileSize * (0.5f + (numStrips - strip - 1) * 0.5f);
-        float nearDist = tileSize * (0.5f + (numStrips - strip) * 0.5f);
+        // Improved perspective-correct distance calculation
+        float farScreenRatio = (screenHeight_ / 2.0f - farY) / (screenHeight_ / 2.0f);
+        float nearScreenRatio = (screenHeight_ / 2.0f - nearY) / (screenHeight_ / 2.0f);
         
-        // Calculate world coordinates for strip corners
+        // Prevent division by zero for horizon line
+        farScreenRatio = std::max(farScreenRatio, 0.001f);
+        nearScreenRatio = std::max(nearScreenRatio, 0.001f);
+        
+        float farDist = eyeHeight / farScreenRatio;
+        float nearDist = eyeHeight / nearScreenRatio;
+        
         float farLeftX = playerPos.x + std::cos(leftAngle) * farDist;
         float farLeftY = playerPos.y + std::sin(leftAngle) * farDist;
         float farRightX = playerPos.x + std::cos(rightAngle) * farDist;
@@ -435,7 +433,10 @@ void Renderer::drawCeilingTiled(const Player& player, const Map& map) {
         float nearRightX = playerPos.x + std::cos(rightAngle) * nearDist;
         float nearRightY = playerPos.y + std::sin(rightAngle) * nearDist;
         
-        // Draw strip
+        float brightness = RenderConfig::CEILING_BRIGHTNESS;
+        glColor3f(brightness, brightness, brightness);
+        
+        // Use world coordinates directly for texture mapping
         glBegin(GL_QUADS);
         glTexCoord2f(farLeftX / tileSize, farLeftY / tileSize);
         glVertex2f(0, farY);
