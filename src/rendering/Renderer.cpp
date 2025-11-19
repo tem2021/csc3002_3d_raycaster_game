@@ -279,7 +279,7 @@ void Renderer::drawEnemies3D(const std::vector<Enemy>& enemies,
 
     // ------ 2. 对每个敌人逐列渲染 ------
     for (auto& info : sorted) {
-        const Enemy* enemy = info.e;
+    //  const Enemy* enemy = info.e;
         float dist = info.dist;
         float enemyAngle = info.angle;
 
