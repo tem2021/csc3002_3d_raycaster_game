@@ -33,6 +33,8 @@ namespace RenderConfig {
     constexpr float PLAYER_EYE_HEIGHT = 0.5f;  // Player eye height relative to tile size
     constexpr float FOG_START = 5.0f;  // Distance where fog starts
     constexpr float FOG_END = 15.0f;  // Distance where fog is maximum
+    constexpr float FLOOR_TEXSCALE = 2.0f;      // Scale texture for ground 
+    constexpr float CEILING_TEXSCALE = 2.0f;
 }
 
 namespace PlayerConfig {

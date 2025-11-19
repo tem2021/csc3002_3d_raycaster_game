@@ -332,58 +332,64 @@ void Renderer::drawFloorTiled(const Player& player, const Map& map) {
     float playerAngle = player.getAngle();
     float tileSize = map.getTileSize();
     float eyeHeight = tileSize * RenderConfig::PLAYER_EYE_HEIGHT;
-    
     float fovRad = GameConfig::FOV * Math::DEG_TO_RAD;
-    float leftAngle = playerAngle - fovRad / 2.0f;
-    float rightAngle = playerAngle + fovRad / 2.0f;
+    float brightness = RenderConfig::FLOOR_BRIGHTNESS;
     
     int numStrips = RenderConfig::FLOOR_STRIPS;
     float stripHeight = (screenHeight_ / 2.0f) / numStrips;
+    int numColumns = 32; // Subdivide horizontally for correct perspective
+    float columnWidth = screenWidth_ / static_cast<float>(numColumns);
     
     for (int strip = 0; strip < numStrips; strip++) {
         float nearY = screenHeight_ / 2.0f + strip * stripHeight;
         float farY = nearY + stripHeight;
         
-        // Improved perspective-correct distance calculation
-        // Based on eye height and screen position
         float nearScreenRatio = (nearY - screenHeight_ / 2.0f) / (screenHeight_ / 2.0f);
         float farScreenRatio = (farY - screenHeight_ / 2.0f) / (screenHeight_ / 2.0f);
-        
-        // Prevent division by zero for horizon line
         nearScreenRatio = std::max(nearScreenRatio, 0.001f);
         farScreenRatio = std::max(farScreenRatio, 0.001f);
         
         float nearDist = eyeHeight / nearScreenRatio;
         float farDist = eyeHeight / farScreenRatio;
         
-        // Calculate world positions for each corner
-        float nearLeftX = playerPos.x + std::cos(leftAngle) * nearDist;
-        float nearLeftY = playerPos.y + std::sin(leftAngle) * nearDist;
-        float nearRightX = playerPos.x + std::cos(rightAngle) * nearDist;
-        float nearRightY = playerPos.y + std::sin(rightAngle) * nearDist;
-        
-        float farLeftX = playerPos.x + std::cos(leftAngle) * farDist;
-        float farLeftY = playerPos.y + std::sin(leftAngle) * farDist;
-        float farRightX = playerPos.x + std::cos(rightAngle) * farDist;
-        float farRightY = playerPos.y + std::sin(rightAngle) * farDist;
-        
-        float brightness = RenderConfig::FLOOR_BRIGHTNESS;
         glColor3f(brightness, brightness, brightness);
         
-        // Use world coordinates directly for texture mapping
-        glBegin(GL_QUADS);
-        glTexCoord2f(nearLeftX / tileSize, nearLeftY / tileSize);
-        glVertex2f(0, nearY);
-        
-        glTexCoord2f(nearRightX / tileSize, nearRightY / tileSize);
-        glVertex2f(screenWidth_, nearY);
-        
-        glTexCoord2f(farRightX / tileSize, farRightY / tileSize);
-        glVertex2f(screenWidth_, farY);
-        
-        glTexCoord2f(farLeftX / tileSize, farLeftY / tileSize);
-        glVertex2f(0, farY);
-        glEnd();
+        // Subdivide each strip horizontally to maintain perspective correctness
+        for (int col = 0; col < numColumns; col++) {
+            float leftX = col * columnWidth;
+            float rightX = (col + 1) * columnWidth;
+            
+            // Calculate ray angles for left and right edges of this column
+            float leftRatio = leftX / screenWidth_;
+            float rightRatio = rightX / screenWidth_;
+            float leftAngle = playerAngle - fovRad / 2.0f + leftRatio * fovRad;
+            float rightAngle = playerAngle - fovRad / 2.0f + rightRatio * fovRad;
+            
+            // Calculate world positions for all 4 corners
+            float nearLeftX = playerPos.x + std::cos(leftAngle) * nearDist;
+            float nearLeftY = playerPos.y + std::sin(leftAngle) * nearDist;
+            float nearRightX = playerPos.x + std::cos(rightAngle) * nearDist;
+            float nearRightY = playerPos.y + std::sin(rightAngle) * nearDist;
+            
+            float farLeftX = playerPos.x + std::cos(leftAngle) * farDist;
+            float farLeftY = playerPos.y + std::sin(leftAngle) * farDist;
+            float farRightX = playerPos.x + std::cos(rightAngle) * farDist;
+            float farRightY = playerPos.y + std::sin(rightAngle) * farDist;
+            
+            glBegin(GL_QUADS);
+            glTexCoord2f(nearLeftX / tileSize, nearLeftY / tileSize);
+            glVertex2f(leftX, nearY);
+            
+            glTexCoord2f(nearRightX / tileSize, nearRightY / tileSize);
+            glVertex2f(rightX, nearY);
+            
+            glTexCoord2f(farRightX / tileSize, farRightY / tileSize);
+            glVertex2f(rightX, farY);
+            
+            glTexCoord2f(farLeftX / tileSize, farLeftY / tileSize);
+            glVertex2f(leftX, farY);
+            glEnd();
+        }
     }
     
     glDisable(GL_TEXTURE_2D);
@@ -391,7 +397,6 @@ void Renderer::drawFloorTiled(const Player& player, const Map& map) {
 
 void Renderer::drawCeilingTiled(const Player& player, const Map& map) {
     GLuint ceilingTexID = textureManager_.getTextureID(50);
-    
     glEnable(GL_TEXTURE_2D);
     glBindTexture(GL_TEXTURE_2D, ceilingTexID);
     glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
@@ -400,56 +405,64 @@ void Renderer::drawCeilingTiled(const Player& player, const Map& map) {
     float playerAngle = player.getAngle();
     float tileSize = map.getTileSize();
     float eyeHeight = tileSize * RenderConfig::PLAYER_EYE_HEIGHT;
-    
     float fovRad = GameConfig::FOV * Math::DEG_TO_RAD;
-    float leftAngle = playerAngle - fovRad / 2.0f;
-    float rightAngle = playerAngle + fovRad / 2.0f;
+    float brightness = RenderConfig::CEILING_BRIGHTNESS;
     
     int numStrips = RenderConfig::FLOOR_STRIPS;
     float stripHeight = (screenHeight_ / 2.0f) / numStrips;
+    int numColumns = 32; // Subdivide horizontally for correct perspective
+    float columnWidth = screenWidth_ / static_cast<float>(numColumns);
     
     for (int strip = 0; strip < numStrips; ++strip) {
         float farY = strip * stripHeight;
         float nearY = farY + stripHeight;
         
-        // Improved perspective-correct distance calculation
         float farScreenRatio = (screenHeight_ / 2.0f - farY) / (screenHeight_ / 2.0f);
         float nearScreenRatio = (screenHeight_ / 2.0f - nearY) / (screenHeight_ / 2.0f);
-        
-        // Prevent division by zero for horizon line
         farScreenRatio = std::max(farScreenRatio, 0.001f);
         nearScreenRatio = std::max(nearScreenRatio, 0.001f);
         
         float farDist = eyeHeight / farScreenRatio;
         float nearDist = eyeHeight / nearScreenRatio;
         
-        float farLeftX = playerPos.x + std::cos(leftAngle) * farDist;
-        float farLeftY = playerPos.y + std::sin(leftAngle) * farDist;
-        float farRightX = playerPos.x + std::cos(rightAngle) * farDist;
-        float farRightY = playerPos.y + std::sin(rightAngle) * farDist;
-        
-        float nearLeftX = playerPos.x + std::cos(leftAngle) * nearDist;
-        float nearLeftY = playerPos.y + std::sin(leftAngle) * nearDist;
-        float nearRightX = playerPos.x + std::cos(rightAngle) * nearDist;
-        float nearRightY = playerPos.y + std::sin(rightAngle) * nearDist;
-        
-        float brightness = RenderConfig::CEILING_BRIGHTNESS;
         glColor3f(brightness, brightness, brightness);
         
-        // Use world coordinates directly for texture mapping
-        glBegin(GL_QUADS);
-        glTexCoord2f(farLeftX / tileSize, farLeftY / tileSize);
-        glVertex2f(0, farY);
-        
-        glTexCoord2f(farRightX / tileSize, farRightY / tileSize);
-        glVertex2f(screenWidth_, farY);
-        
-        glTexCoord2f(nearRightX / tileSize, nearRightY / tileSize);
-        glVertex2f(screenWidth_, nearY);
-        
-        glTexCoord2f(nearLeftX / tileSize, nearLeftY / tileSize);
-        glVertex2f(0, nearY);
-        glEnd();
+        // Subdivide each strip horizontally to maintain perspective correctness
+        for (int col = 0; col < numColumns; col++) {
+            float leftX = col * columnWidth;
+            float rightX = (col + 1) * columnWidth;
+            
+            // Calculate ray angles for left and right edges of this column
+            float leftRatio = leftX / screenWidth_;
+            float rightRatio = rightX / screenWidth_;
+            float leftAngle = playerAngle - fovRad / 2.0f + leftRatio * fovRad;
+            float rightAngle = playerAngle - fovRad / 2.0f + rightRatio * fovRad;
+            
+            // Calculate world positions for all 4 corners
+            float farLeftX = playerPos.x + std::cos(leftAngle) * farDist;
+            float farLeftY = playerPos.y + std::sin(leftAngle) * farDist;
+            float farRightX = playerPos.x + std::cos(rightAngle) * farDist;
+            float farRightY = playerPos.y + std::sin(rightAngle) * farDist;
+            
+            float nearLeftX = playerPos.x + std::cos(leftAngle) * nearDist;
+            float nearLeftY = playerPos.y + std::sin(leftAngle) * nearDist;
+            float nearRightX = playerPos.x + std::cos(rightAngle) * nearDist;
+            float nearRightY = playerPos.y + std::sin(rightAngle) * nearDist;
+            
+            glBegin(GL_QUADS);
+            glTexCoord2f(farLeftX / tileSize, farLeftY / tileSize);
+            glVertex2f(leftX, farY);
+            
+            glTexCoord2f(farRightX / tileSize, farRightY / tileSize);
+            glVertex2f(rightX, farY);
+            
+            glTexCoord2f(nearRightX / tileSize, nearRightY / tileSize);
+            glVertex2f(rightX, nearY);
+            
+            glTexCoord2f(nearLeftX / tileSize, nearLeftY / tileSize);
+            glVertex2f(leftX, nearY);
+            glEnd();
+        }
     }
     
     glDisable(GL_TEXTURE_2D);
