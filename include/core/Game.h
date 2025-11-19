@@ -2,6 +2,8 @@
 #define GAME_H
 
 #include "entities/Player.h"
+#include "entities/Enemy.h"
+#include <vector>
 #include "world/Map.h"
 #include "world/Raycaster.h"
 #include "rendering/Renderer.h"
@@ -31,11 +33,12 @@ private:
     std::unique_ptr<Raycaster> raycaster_;
     std::unique_ptr<Renderer> renderer_;
     std::unique_ptr<InputManager> inputManager_;
-    
+    std::vector<Enemy> enemies_;
     int screenWidth_;
     int screenHeight_;
     
     void processPlayerInput();
+    Vec2 findFreeSpawnPoint();
 };
 
 #endif // GAME_H

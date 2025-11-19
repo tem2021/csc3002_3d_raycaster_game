@@ -68,6 +68,14 @@ void Game::init() {
         screenWidth_ / 2,
         screenHeight_ / 2
     );
+    // --- init enemies --- generate 10 enemies at free positions
+    enemies_.clear();
+    for (int i = 0; i < 10; ++i) {
+    enemies_.push_back(Enemy(findFreeSpawnPoint(), 0.3f));
+
+}
+
+
     
     // Load all textures
     loadTextures();
@@ -126,9 +134,13 @@ void Game::processPlayerInput() {
 }
 
 void Game::update() {
-    // update the game logic in the future 
-    // e.g. enemy ai / weapons 
+    Vec2 playerPos = player_->getPosition();
+
+    for (auto& e : enemies_) {
+        e.update(playerPos, *map_);
+    }
 }
+
 
 void Game::render() {
     renderer_->clear();
@@ -143,7 +155,8 @@ void Game::render() {
     
     // render 3d View
     renderer_->draw3DView(rayHits, *player_, *map_);
-    
+    renderer_->drawEnemies3D(enemies_, *player_, *map_, rayHits);
+
     // render crosshair
     renderer_->drawCrosshair();
     
@@ -157,4 +170,29 @@ void Game::render() {
 
 bool Game::shouldExit() const {
     return inputManager_->shouldExit();
+
+
+}
+
+Vec2 Game::findFreeSpawnPoint() {
+    int tileSize = map_->getTileSize();
+    Vec2 p = map_->getInitPosition();
+
+    int px = p.x / tileSize;
+    int py = p.y / tileSize;
+
+    while (true) {
+        int x = px + (rand() % 21 - 10); // 玩家附近 ±10
+        int y = py + (rand() % 21 - 10);
+
+        if (x < 0 || x >= map_->getWidth()) continue;
+        if (y < 0 || y >= map_->getHeight()) continue;
+
+        if (!map_->isWall(x, y)) {
+            return Vec2{
+                x * tileSize + tileSize * 0.5f,
+                y * tileSize + tileSize * 0.5f
+            };
+        }
+    }
 }
