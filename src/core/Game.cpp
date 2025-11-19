@@ -68,7 +68,6 @@ void Game::init() {
         screenWidth_ / 2,
         screenHeight_ / 2
     );
-<<<<<<< HEAD
     // --- init enemies --- generate 10 enemies at free positions
     enemies_.clear();
     for (int i = 0; i < 10; ++i) {
@@ -77,7 +76,6 @@ void Game::init() {
 }
 
 
-=======
     
     // Load all textures
     loadTextures();
@@ -104,7 +102,6 @@ void Game::loadTextures() {
     texManager.loadTexture(101, HAJIMI_DATA);
     
     std::cout << "✓ All textures loaded successfully!" << std::endl;
->>>>>>> origin/main
 }
 
 void Game::handleInput() {

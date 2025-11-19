@@ -236,7 +236,6 @@ void Renderer::drawText(int x, int y, const std::string& text) {
     }
 }
 
-<<<<<<< HEAD
 void Renderer::drawEnemies3D(const std::vector<Enemy>& enemies,
                              const Player& player,
                              const Map& map,
@@ -323,7 +322,6 @@ void Renderer::drawEnemies3D(const std::vector<Enemy>& enemies,
 
 
 
-=======
 void Renderer::drawFloorTiled(const Player& player, const Map& map) {
     // Get floor texture (using grass texture for floor)
     GLuint floorTexID = textureManager_.getTextureID(5); // grass 
@@ -455,7 +453,6 @@ void Renderer::drawCeilingTiled(const Player& player, const Map& map) {
     
     glDisable(GL_TEXTURE_2D);
 }
->>>>>>> origin/main
 
 void Renderer::present() {
     glutSwapBuffers();
