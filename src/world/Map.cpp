@@ -14,13 +14,20 @@ Map::Map(const int sourceMap[MAX_HEIGHT][MAX_WIDTH],
     }
     
     // calculate the initial position (centered at the square)
-    initPosition_.x = tileSize_ * (initX - 0.5f);
-    initPosition_.y = tileSize_ * (initY - 0.5f);
+    initPosition_.x = tileSize_ * (initX + 0.5f);
+    initPosition_.y = tileSize_ * (initY + 0.5f);
 }
 
 bool Map::isWall(int x, int y) const {
     if (x < 0 || x >= width_ || y < 0 || y >= height_) {
         return true;  
     }
-    return tiles_[y][x] == 1;
+    return tiles_[y][x] > 0;  // only type 0 is not the wall
+}
+
+int Map::getWallType(int x, int y) const {
+    if (x < 0 || x >= width_ || y < 0 || y >= height_) {
+        return 1;  // by default the edge wall type is 1
+    }
+    return tiles_[y][x];
 }

@@ -5,25 +5,36 @@ import re
 import copy
 import os
 from pathlib import Path
+from PIL import Image
+import numpy as np
 
-# The WIDTH and HEIGHT of the map are able to change here
+# Map dimensions
 MAP_W, MAP_H = 64, 64
-CELL_SIZE = 12
-TOOLBAR_W = 100
-BUTTON_H = 26
-WIDTH, HEIGHT = MAP_W * CELL_SIZE + TOOLBAR_W, MAP_H * CELL_SIZE
+CELL_SIZE = 16  # Increased from 12
+TOOLBAR_W = 160  # Increased from 100
+TEXTURE_PANEL_W = 300  # Right panel for texture selection (increased from 280)
+BUTTON_H = 30  # Increased from 26
+
+# Calculate window size
+WIDTH = TOOLBAR_W + MAP_W * CELL_SIZE + TEXTURE_PANEL_W  # 1464
+HEIGHT = MAP_H * CELL_SIZE  # 1024
 
 mapdata = [[1 if x == 0 or x == MAP_W-1 or y == 0 or y == MAP_H-1 else 0 for x in range(MAP_W)] for y in range(MAP_H)]
 player_pos = None
+current_wall_type = 1  # Currently selected wall type (1-5)
+current_map_file = None
 
 undo_stack = []
 redo_stack = []
 show_help = False
-current_map_file = None 
 available_maps = []  
 map_select_mode = False  
 new_map_input_mode = False 
-new_map_name = ""  
+new_map_name = ""
+
+# Texture preview data
+texture_previews = {}  # {wall_type: {name, surface, path}}
+available_textures = []  
 
 def scan_map_files(base_path="../include/data/maps"):
     """scan all map files under /include/data/maps"""
@@ -43,6 +54,167 @@ def scan_map_files(base_path="../include/data/maps"):
         print(f"Error scanning map files: {e}")
     
     return sorted(maps) if maps else []
+
+def scan_texture_files(base_path="../include/data/textures"):
+    """Scan texture PNG files for preview"""
+    textures = []
+    try:
+        for path_str in [base_path, "include/data/textures"]:
+            path = Path(path_str)
+            if path.exists():
+                for file in sorted(path.glob("*.png")):
+                    textures.append(file)
+                if textures:
+                    break
+    except Exception as e:
+        print(f"Error scanning textures: {e}")
+    return textures
+
+def load_texture_mapping(config_path="../include/core/texture_mapping.txt"):
+    """Load texture mapping from configuration file"""
+    texture_map = {}
+    try:
+        for path_str in [config_path, "include/core/texture_mapping.txt"]:
+            path = Path(path_str)
+            if path.exists():
+                with open(path, 'r', encoding='utf-8') as f:
+                    for line in f:
+                        line = line.strip()
+                        # Skip comments and empty lines
+                        if not line or line.startswith('#'):
+                            continue
+                        
+                        # Parse line: ID:filename:display_name
+                        parts = line.split(':')
+                        if len(parts) >= 3:
+                            texture_id = int(parts[0])
+                            filename = parts[1] if parts[1] != 'null' else None
+                            display_name = parts[2]
+                            texture_map[texture_id] = {
+                                'filename': filename,
+                                'name': display_name
+                            }
+                print(f"✓ Loaded texture mapping from {path}")
+                return texture_map
+    except Exception as e:
+        print(f"Error loading texture mapping: {e}")
+    
+    # Fallback to default mapping
+    print("⚠ Using default texture mapping")
+    return {
+        0: {'filename': None, 'name': 'Empty'},
+        1: {'filename': 'brick.h', 'name': 'Brick'},
+        2: {'filename': 'wood.h', 'name': 'Wood'},
+        3: {'filename': 'metal.h', 'name': 'Metal'},
+        4: {'filename': 'CUHK_SZ.h', 'name': 'CUHK_SZ'},
+        5: {'filename': 'Hajimi.h', 'name': 'Hajimi'},
+    }
+
+def adjust_color_for_visibility(color):
+    """
+    Adjust color brightness to ensure visibility against white background
+    
+    Args:
+        color: (R, G, B) tuple
+    
+    Returns:
+        Adjusted (R, G, B) tuple
+    """
+    r, g, b = color
+    
+    # Calculate perceived brightness (0-255)
+    # Using luminance formula: 0.299*R + 0.587*G + 0.114*B
+    brightness = 0.299 * r + 0.587 * g + 0.114 * b
+    
+    # Define thresholds
+    MAX_BRIGHTNESS = 200  # If too bright, darken it
+    MIN_BRIGHTNESS = 60   # If too dark, lighten it
+    
+    if brightness > MAX_BRIGHTNESS:
+        # Too bright - scale down proportionally
+        scale = MAX_BRIGHTNESS / brightness
+        r = int(r * scale)
+        g = int(g * scale)
+        b = int(b * scale)
+    elif brightness < MIN_BRIGHTNESS:
+        # Too dark - scale up proportionally
+        if brightness > 0:
+            scale = MIN_BRIGHTNESS / brightness
+            r = min(255, int(r * scale))
+            g = min(255, int(g * scale))
+            b = min(255, int(b * scale))
+        else:
+            # Pure black - make it dark gray
+            r = g = b = MIN_BRIGHTNESS
+    
+    return (r, g, b)
+
+def load_texture_previews():
+    """Load texture preview images based on mapping configuration"""
+    global texture_previews, available_textures
+    texture_previews = {}
+    
+    # Load texture mapping configuration
+    texture_map = load_texture_mapping()
+    
+    # Load PNG previews for each texture
+    for texture_id, info in texture_map.items():
+        if texture_id == 0 or info['filename'] is None:
+            continue  # Skip empty space
+        
+        # Find corresponding PNG file
+        h_filename = info['filename']
+        png_filename = h_filename.replace('.h', '.png')
+        
+        # Try to find PNG file
+        png_path = None
+        for base_path in ["../include/data/textures", "include/data/textures"]:
+            test_path = Path(base_path) / png_filename
+            if test_path.exists():
+                png_path = test_path
+                break
+        
+        if png_path:
+            try:
+                img = Image.open(png_path)
+                img_rgb = img.convert('RGB')
+                
+                # Extract average color from the texture
+                img_array = np.array(img_rgb)
+                original_color = tuple(img_array.mean(axis=(0, 1)).astype(int))
+                
+                # Adjust color for better visibility
+                adjusted_color = adjust_color_for_visibility(original_color)
+                
+                # Resize for preview
+                img_resized = img_rgb.resize((64, 64), Image.Resampling.NEAREST)
+                
+                # Convert to pygame surface
+                img_data = np.array(img_resized)
+                surf = pygame.surfarray.make_surface(np.transpose(img_data, (1, 0, 2)))
+                
+                texture_previews[texture_id] = {
+                    'name': info['name'],
+                    'surface': surf,
+                    'path': str(png_path),
+                    'h_file': h_filename,
+                    'color': adjusted_color,  # Use adjusted color
+                    'original_color': original_color  # Keep original for reference
+                }
+                
+                # Print color adjustment info
+                if original_color != adjusted_color:
+                    print(f"  ID {texture_id}: {info['name']} - RGB{original_color} → RGB{adjusted_color}")
+                else:
+                    print(f"  ID {texture_id}: {info['name']} - RGB{adjusted_color}")
+                
+            except Exception as e:
+                print(f"Error loading texture {png_filename}: {e}")
+        else:
+            print(f"⚠ PNG not found for texture ID {texture_id}: {png_filename}")
+    
+    print(f"✓ Loaded {len(texture_previews)} texture previews with colors")
+    return texture_map
 
 def read_map_from_file(filename):
     """parse the map file (level1.h)"""
@@ -163,6 +335,9 @@ def redo():
 pygame.init()
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Map Editor")
+
+# Load texture previews
+load_texture_previews()
 
 DRAW_MODE, ERASE_MODE = 0, 1
 POINT_TOOL, LINE_TOOL, RECT_TOOL, ELLIPSE_TOOL = 0, 1, 2, 3
@@ -330,8 +505,20 @@ mode_buttons[0].active = True
 def draw_toolbar():
     pygame.draw.rect(screen, (230,230,240), (0,0,TOOLBAR_W,HEIGHT))
     font = pygame.font.SysFont(None, 18)
-    title = font.render("Mode & Tools", True, (55,55,80))
-    screen.blit(title, (17,7))
+    font_small = pygame.font.SysFont(None, 14)
+    
+    # Display current filename or "No file loaded"
+    if current_map_file:
+        filename = os.path.basename(current_map_file)
+        title_text = f"{filename}"
+        title_color = (55, 55, 80)
+    else:
+        title_text = "No file loaded"
+        title_color = (150, 50, 50)
+    
+    title = font.render(title_text, True, title_color)
+    screen.blit(title, (10, 7))
+    
     for b in mode_buttons: b.draw(screen)
     for b in tool_buttons: b.draw(screen)
     for b in extra_buttons: b.draw(screen)
@@ -568,15 +755,45 @@ def draw_help():
     screen.blit(footer, footer_rect)
 
 def draw_map():
+    """Draw map with different colors for different wall types"""
+    font_id_small = pygame.font.SysFont(None, 12, bold=True)  # For 3-digit IDs
+    font_id_normal = pygame.font.SysFont(None, 16, bold=True)  # For 1-2 digit IDs
+    
     for y in range(MAP_H):
         for x in range(MAP_W):
             px = TOOLBAR_W + x*CELL_SIZE
             py = y*CELL_SIZE
-            color = (40, 40, 40) if mapdata[y][x] else (220, 220, 220)
+            
+            cell_value = mapdata[y][x]
+            
+            # Get color from texture preview or use default
+            if cell_value == 0:
+                color = (220, 220, 220)  # Empty - White
+            elif cell_value in texture_previews:
+                color = texture_previews[cell_value]['color']  # Use extracted color
+            else:
+                color = (100, 100, 100)  # Unknown - Gray
+            
             if player_pos == (x, y):
-                color = (0, 255, 0)
+                color = (0, 255, 0)  # Player spawn - Green
+            
             pygame.draw.rect(screen, color, (px, py, CELL_SIZE-1, CELL_SIZE-1))
-            pygame.draw.rect(screen, (200,200,200), (px, py, CELL_SIZE-1, CELL_SIZE-1), 1)
+            pygame.draw.rect(screen, (180, 180, 180), (px, py, CELL_SIZE-1, CELL_SIZE-1), 1)
+            
+            # Draw texture ID on non-empty cells
+            if cell_value != 0:
+                # Calculate brightness to determine text color
+                brightness = (color[0] * 0.299 + color[1] * 0.587 + color[2] * 0.114)
+                text_color = (255, 255, 255) if brightness < 128 else (0, 0, 0)
+                
+                # Use smaller font for 3-digit numbers
+                font = font_id_small if cell_value >= 100 else font_id_normal
+                
+                id_text = font.render(str(cell_value), True, text_color)
+                id_rect = id_text.get_rect(center=(px + CELL_SIZE//2, py + CELL_SIZE//2))
+                screen.blit(id_text, id_rect)
+    
+    # Draw preview overlays for tools
     if tool == LINE_TOOL and line_start and line_end:
         x0, y0 = line_start
         x1, y1 = line_end
@@ -598,6 +815,113 @@ def draw_map():
             pygame.draw.rect(screen, (255, 180, 0, 60), (sx0, sy0, sx1-sx0, sy1-sy0), 0)
         else:
             pygame.draw.rect(screen, (255, 50, 0), (sx0, sy0, sx1-sx0, sy1-sy0), 2)
+
+def draw_texture_panel():
+    """Draw compact texture selection panel"""
+    panel_x = TOOLBAR_W + MAP_W * CELL_SIZE
+    panel_rect = pygame.Rect(panel_x, 0, TEXTURE_PANEL_W, HEIGHT)
+    pygame.draw.rect(screen, (245, 245, 250), panel_rect)
+    
+    font_title = pygame.font.SysFont(None, 22, bold=True)
+    font_small = pygame.font.SysFont(None, 14)
+    
+    # Title
+    title = font_title.render("Textures", True, (60, 60, 80))
+    screen.blit(title, (panel_x + 10, 10))
+    
+    # Compact grid layout
+    TEX_SIZE = 64  # Each texture preview size
+    SPACING = 6    # Space between textures
+    TEXTURES_PER_ROW = 4
+    START_X = panel_x + 10
+    START_Y = 45
+    
+    # Texture buttons
+    if not hasattr(draw_texture_panel, 'buttons'):
+        draw_texture_panel.buttons = {}
+    
+    # Draw all textures in compact grid
+    sorted_ids = sorted(texture_previews.keys())
+    
+    for idx, wall_type in enumerate(sorted_ids):
+        if wall_type == 0:  # Skip empty
+            continue
+        
+        tex_data = texture_previews[wall_type]
+        
+        # Calculate grid position
+        col = idx % TEXTURES_PER_ROW
+        row = idx // TEXTURES_PER_ROW
+        
+        x = START_X + col * (TEX_SIZE + SPACING)
+        y = START_Y + row * (TEX_SIZE + SPACING + 16)  # +16 for ID label
+        
+        # Button area (64×64 texture + small label)
+        button_rect = pygame.Rect(x, y, TEX_SIZE, TEX_SIZE)
+        
+        # Background and border
+        is_selected = (wall_type == current_wall_type)
+        
+        if is_selected:
+            # Selected: glowing effect with multiple borders
+            # Outer glow
+            glow_rect = pygame.Rect(x - 3, y - 3, TEX_SIZE + 6, TEX_SIZE + 6)
+            pygame.draw.rect(screen, (100, 150, 255, 128), glow_rect, 3)
+            
+            # Inner bright border
+            pygame.draw.rect(screen, (255, 255, 255), button_rect)
+            pygame.draw.rect(screen, (50, 100, 255), button_rect, 4)
+            
+            # Corner highlights
+            pygame.draw.circle(screen, (150, 200, 255), (x + 4, y + 4), 3)
+            pygame.draw.circle(screen, (150, 200, 255), (x + TEX_SIZE - 4, y + 4), 3)
+            pygame.draw.circle(screen, (150, 200, 255), (x + 4, y + TEX_SIZE - 4), 3)
+            pygame.draw.circle(screen, (150, 200, 255), (x + TEX_SIZE - 4, y + TEX_SIZE - 4), 3)
+        else:
+            # Not selected: simple thin gray border
+            pygame.draw.rect(screen, (255, 255, 255), button_rect)
+            pygame.draw.rect(screen, (150, 150, 160), button_rect, 2)
+        
+        # Draw texture preview
+        screen.blit(tex_data['surface'], (x, y))
+        
+        # Draw ID label below texture
+        id_text = font_small.render(f"ID {wall_type}", True, (80, 80, 80))
+        id_rect = id_text.get_rect(center=(x + TEX_SIZE // 2, y + TEX_SIZE + 8))
+        screen.blit(id_text, id_rect)
+        
+        # Save button area for click detection
+        draw_texture_panel.buttons[wall_type] = button_rect
+    
+    # Show selected texture info at bottom
+    if current_wall_type in texture_previews:
+        info_y = HEIGHT - 80
+        
+        # Draw separator line
+        pygame.draw.line(screen, (200, 200, 200), 
+                        (panel_x + 10, info_y - 10), 
+                        (panel_x + TEXTURE_PANEL_W - 10, info_y - 10), 1)
+        
+        selected_tex = texture_previews[current_wall_type]
+        
+        # Selected texture info
+        info_title = font_title.render("Selected:", True, (60, 60, 80))
+        screen.blit(info_title, (panel_x + 10, info_y))
+        
+        name_text = font_small.render(f"ID {current_wall_type}: {selected_tex['name']}", 
+                                     True, (80, 80, 80))
+        screen.blit(name_text, (panel_x + 10, info_y + 25))
+        
+        file_text = font_small.render(selected_tex.get('h_file', ''), 
+                                     True, (120, 120, 120))
+        screen.blit(file_text, (panel_x + 10, info_y + 42))
+    
+    # Instructions at very bottom
+    hint_y = HEIGHT - 25
+    hint = font_small.render(f"Total: {len(texture_previews)} textures", 
+                            True, (120, 120, 120))
+    screen.blit(hint, (panel_x + 10, hint_y))
+
 
 def preview_ellipse(ellipse_start, ellipse_end, rect_mode):
     x0, y0 = ellipse_start
@@ -821,19 +1145,24 @@ def main():
         print("Hint: Use Ctrl+N or 'CREATE NEW MAP' to create your first map")
 
     while running:
+        global current_wall_type  # Allow modification
         screen.fill((0,0,0))
         
         if new_map_input_mode:
             draw_new_map_input()
         elif map_select_mode:
             draw_map_selector()
-            draw_map_selector.map_buttons = []  # reset the button list
+            # Don't reset map_buttons - we need them for click detection!
         elif show_help:
             draw_help()
         else:
             draw_map()
             if tool == ELLIPSE_TOOL and ellipse_start and ellipse_end:
                 preview_ellipse(ellipse_start, ellipse_end, rect_mode)
+        
+        # Draw texture panel (on right side)
+        if not show_help and not map_select_mode and not new_map_input_mode:
+            draw_texture_panel()
 
         # show the tool bar
         pygame.draw.rect(screen, (230,230,240), (0, 0, TOOLBAR_W, HEIGHT))
@@ -860,6 +1189,21 @@ def main():
             if event.type == pygame.QUIT:
                 quit_editor()
             elif event.type == pygame.MOUSEBUTTONDOWN:
+                mx, my = event.pos
+                
+                # Check texture panel clicks first (right side)
+                if not show_help and not map_select_mode and not new_map_input_mode:
+                    if hasattr(draw_texture_panel, 'buttons'):
+                        texture_clicked = False
+                        for wall_type, button_rect in draw_texture_panel.buttons.items():
+                            if button_rect.collidepoint(mx, my):
+                                current_wall_type = wall_type
+                                print(f"✓ Selected wall type {wall_type}: {texture_previews[wall_type]['name']}")
+                                texture_clicked = True
+                                break
+                        if texture_clicked:
+                            continue  # Skip other mouse handling
+                
                 if event.pos[0] < TOOLBAR_W:
                     # click on tool bar
                     for idx, b in enumerate(extra_buttons):
@@ -916,7 +1260,7 @@ def main():
                         y = clamp(y, 0, MAP_H-1)
                         if event.button == 1:
                             if tool == POINT_TOOL:
-                                value = 1 if mode == DRAW_MODE else 0
+                                value = current_wall_type if mode == DRAW_MODE else 0  # Use selected wall type
                                 handle_draw_erase(x, y, value)
                             elif tool == LINE_TOOL:
                                 line_start = (x, y)
@@ -986,13 +1330,13 @@ def main():
             elif event.type == pygame.MOUSEBUTTONUP:
                 if not show_help and not map_select_mode and not new_map_input_mode:
                     if event.button == 1 and dragging_line and line_start and line_end:
-                        value = 1 if mode == DRAW_MODE else 0
+                        value = current_wall_type if mode == DRAW_MODE else 0  # Use selected wall type
                         line_cells = bresenham_line(line_start[0], line_start[1], line_end[0], line_end[1])
                         handle_line_draw(line_cells, value)
                         line_start, line_end = None, None
                         dragging_line = False
                     elif event.button == 1 and dragging_rect and rect_start and rect_end:
-                        value = 1 if mode == DRAW_MODE else 0
+                        value = current_wall_type if mode == DRAW_MODE else 0  # Use selected wall type
                         rx0, ry0 = rect_start
                         rx1, ry1 = rect_end
                         rx1 = clamp(rx1, 0, MAP_W-1)
@@ -1001,7 +1345,7 @@ def main():
                         rect_start, rect_end = None, None
                         dragging_rect = False
                     elif event.button == 1 and dragging_ellipse and ellipse_start and ellipse_end:
-                        value = 1 if mode == DRAW_MODE else 0
+                        value = current_wall_type if mode == DRAW_MODE else 0  # Use selected wall type
                         ex0, ey0 = ellipse_start
                         ex1, ey1 = ellipse_end
                         handle_ellipse_draw(ex0, ey0, ex1, ey1, rect_mode, value)

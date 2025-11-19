@@ -15,6 +15,7 @@ public:
         int tileSize);
     
     bool isWall(int x, int y) const;
+    int getWallType(int x, int y) const;
     int getTileSize() const { return tileSize_; }
     int getWidth() const { return width_; }
     int getHeight() const { return height_; }

@@ -1,0 +1,26 @@
+# Texture ID to File Mapping Configuration
+# Format: ID (0 - 255):filename(.h):display_name
+#
+# Lines starting with # and empty lines will be ignored
+# 0 is reserved for empty space; 50 is reserved for ceiling texture 
+
+# Empty space (required)
+0:null:Empty
+
+# Wall textures 
+1:brick.h:Brick
+2:wood.h:Wood
+3:metal.h:Metal
+4:stone.h:Stone
+5:grass.h:Grass
+6:dirt.h:Dirt
+7:glass.h:Glass
+8:marble.h:Marble
+9:concrete.h:Concrete
+
+# More custom textures below
+100:CUHK_SZ.h:CUHK_SZ
+101:Hajimi.h:Hajimi  
+
+# Example:
+# 12:custom.h:Custom

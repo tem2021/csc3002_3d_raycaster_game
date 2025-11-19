@@ -28,6 +28,15 @@ namespace RenderConfig {
     constexpr float MIN_BRIGHTNESS = 0.15f;
     constexpr float MAX_FLOOR_DIST = 10.0f;
     constexpr float CROSSHAIR_SIZE = 0.01f;
+    constexpr float MIN_WALL_DISTANCE = 0.1f;  // Minimum distance to prevent texture distortion
+    constexpr int FLOOR_STRIPS = 8;  // Number of horizontal strips for floor rendering (higher = better quality)
+}
+
+namespace PlayerConfig {
+    constexpr int MAX_HEALTH = 100;
+    constexpr float HEALTH_BAR_WIDTH_PERCENT = 0.25f;
+    constexpr float HEALTH_BAR_HEIGHT_PERCENT = 0.015f;
+    constexpr int HEALTH_BAR_MARGIN = 10;
 }
 
 #endif // CONFIG_H

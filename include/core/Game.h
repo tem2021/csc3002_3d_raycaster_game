@@ -19,12 +19,15 @@ public:
     void update();
     void render();
     void handleInput();
+    void loadTextures();  // Load all textures
     
-    // 用于 GLUT 回调
+    // Used for GLUT Callback
     InputManager& getInputManager() { return *inputManager_; }
     bool shouldExit() const;
     
 private:
+    
+    //Owning pointers to core components
     std::unique_ptr<Player> player_;
     std::unique_ptr<Map> map_;
     std::unique_ptr<Raycaster> raycaster_;

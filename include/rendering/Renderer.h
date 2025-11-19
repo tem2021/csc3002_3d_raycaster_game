@@ -5,6 +5,7 @@
 #include "entities/Player.h"
 #include "entities/Enemy.h"
 #include "world/Map.h"
+#include "rendering/TextureManager.h"
 #include <vector>
 #include <string>
 
@@ -21,7 +22,11 @@ public:
                    const std::vector<RayHit>& rayHits);
     void drawCrosshair();
     void drawDebugInfo(const Player& player, bool show);
+    void drawHealthValue(const Player& player);
+    void drawHealthBar(const Player& player);
     void present();
+    
+    TextureManager& getTextureManager() { return textureManager_; }
     
     int getScreenWidth() const { return screenWidth_; }
     int getScreenHeight() const { return screenHeight_; }
@@ -32,10 +37,13 @@ private:
     int centerX_;
     int centerY_;
     
+    // initialize the TextureManager in Renderer
+    TextureManager textureManager_;
+    
     void drawText(int x, int y, const std::string& text);
-    void drawWall(int screenX, float distance, bool isVertical, const Map& map);
-    void drawFloor(int screenX, float wallBottom, float distance, const Map& map);
-    void drawCeiling(int screenX, float wallTop, float distance);
+    void drawWall(int screenX, float distance, const RayHit& hit, const Map& map);
+    void drawFloorTiled(const Player& player, const Map& map);
+    void drawCeilingTiled(const Player& player, const Map& map);
 };
 
 #endif // RENDERER_H
