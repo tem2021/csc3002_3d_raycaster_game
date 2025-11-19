@@ -44,6 +44,8 @@ private:
     void drawWall(int screenX, float distance, const RayHit& hit, const Map& map);
     void drawFloorTiled(const Player& player, const Map& map);
     void drawCeilingTiled(const Player& player, const Map& map);
+    void drawHorizontalPlane(const Player& player, const Map& map, 
+                            GLuint textureID, float brightness, bool isFloor);
 };
 
 #endif // RENDERER_H
