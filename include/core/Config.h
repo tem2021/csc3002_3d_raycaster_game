@@ -13,7 +13,7 @@ namespace GameConfig {
     constexpr float ROTATION_SPEED = 0.0005f;
     constexpr float MOVE_SPEED_FACTOR = 0.1f;
     constexpr float SPRINT_MULTIPLIER = 2.0f;   // SPRINT_SPEED / MOVE_SPEED
-    constexpr float FOV = 60.0f;    // Recommend no larger then 90 (otherwise you might see the fisheye effect)
+    constexpr float FOV = 60.0f;
     constexpr int TARGET_FPS = 60;
     constexpr int FRAME_TIME_MS = 1000 / TARGET_FPS;
     constexpr int WINDOW_WIDTH = 1280;
@@ -23,18 +23,13 @@ namespace GameConfig {
 namespace RenderConfig {
     constexpr float WALL_BRIGHTNESS_H = 0.8f;  // BRIGHTNESS_OF_HORIZONTAL_WALL
     constexpr float WALL_BRIGHTNESS_V = 0.6f;  // BRIGHTNESS_OF_VERTICAL_WALL
-    constexpr float FLOOR_BRIGHTNESS = 0.5f;
-    constexpr float CEILING_BRIGHTNESS = 0.3f;
+    constexpr float FLOOR_BRIGHTNESS = 0.3f;
+    constexpr float CEILING_BRIGHTNESS = 0.2f;
     constexpr float MIN_BRIGHTNESS = 0.15f;
     constexpr float MAX_FLOOR_DIST = 10.0f;
     constexpr float CROSSHAIR_SIZE = 0.01f;
     constexpr float MIN_WALL_DISTANCE = 0.1f;  // Minimum distance to prevent texture distortion
-    constexpr int FLOOR_STRIPS = 32;  // Increased for smoother perspective
-    constexpr float PLAYER_EYE_HEIGHT = 0.5f;  // Player eye height relative to tile size
-    constexpr float FOG_START = 5.0f;  // Distance where fog starts
-    constexpr float FOG_END = 15.0f;  // Distance where fog is maximum
-    constexpr float FLOOR_TEXSCALE = 2.0f;      // Scale texture for ground 
-    constexpr float CEILING_TEXSCALE = 2.0f;
+    constexpr int FLOOR_STRIPS = 8;  // Number of horizontal strips for floor rendering (higher = better quality)
 }
 
 namespace PlayerConfig {

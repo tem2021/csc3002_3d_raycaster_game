@@ -10,16 +10,17 @@ TextureManager::~TextureManager() {
 void TextureManager::loadTexture(int id, const unsigned char data[64][64][3]) {
     GLuint textureID;
     
+    //allocate the available textureID and bind it to the GL_TEXTURE_2D
     glGenTextures(1, &textureID);
     glBindTexture(GL_TEXTURE_2D, textureID);
     
-    // Set texture parameters
+    //set the texture parameter
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
     
-    // Upload texture data
+    //upload the specific texture data
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 64, 64, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
     
     textures_[id] = textureID;

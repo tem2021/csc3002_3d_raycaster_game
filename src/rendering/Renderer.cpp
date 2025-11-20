@@ -73,14 +73,7 @@ void Renderer::drawWall(int screenX, float distance, const RayHit& hit, const Ma
     // this is the direct result of the Perspective Projection 
     // the increasing of the angle is suffcient small, hence the endpoints of the rays moves 
     // approximately the same distance each time 
-    
-    // Apply aspect ratio correction to keep walls square regardless of window size
-    // this equation is getted based on our construction
-    
-    float aspectRatio 
-    = static_cast<float>(screenWidth_) / ( 2 * std::tan(GameConfig::FOV / 2 * Math::DEG_TO_RAD)) / static_cast<float>(screenHeight_);
-
-    float lineH = (map.getTileSize() * screenHeight_ / distance) * aspectRatio;
+    float lineH = map.getTileSize() * screenHeight_ / distance;
     
     // calculate texture coordinates for each hit
     float texStartY = 0.0f;
@@ -329,114 +322,137 @@ void Renderer::drawEnemies3D(const std::vector<Enemy>& enemies,
 
 
 
-void Renderer::drawHorizontalPlane(const Player& player, const Map& map, 
-                                   GLuint textureID, float brightness, bool isFloor) {
+void Renderer::drawFloorTiled(const Player& player, const Map& map) {
+    // Get floor texture (using grass texture for floor)
+    GLuint floorTexID = textureManager_.getTextureID(5); // grass 
     glEnable(GL_TEXTURE_2D);
-    glBindTexture(GL_TEXTURE_2D, textureID);
+    glBindTexture(GL_TEXTURE_2D, floorTexID);
+    
+    // Hint GPU to use perspective-correct interpolation (legacy GL)
     glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
     
     Vec2 playerPos = player.getPosition();
     float playerAngle = player.getAngle();
     float tileSize = map.getTileSize();
-    float eyeHeight = tileSize * RenderConfig::PLAYER_EYE_HEIGHT;
-    float fovRad = GameConfig::FOV * Math::DEG_TO_RAD;
     
-    int numStrips = RenderConfig::FLOOR_STRIPS;
+    // Calculate view frustum
+    float fovRad = GameConfig::FOV * Math::DEG_TO_RAD;
+    float leftAngle = playerAngle - fovRad / 2.0f;
+    float rightAngle = playerAngle + fovRad / 2.0f;
+    
+    // Apply brightness
+    float brightness = RenderConfig::FLOOR_BRIGHTNESS;
+    glColor3f(brightness, brightness, brightness);
+    
+    // Draw floor in multiple horizontal strips 
+    // More strips = better perspective but slower
+    int numStrips = RenderConfig::FLOOR_STRIPS;  
     float stripHeight = (screenHeight_ / 2.0f) / numStrips;
-    int numColumns = 32;
-    float columnWidth = screenWidth_ / static_cast<float>(numColumns);
     
     for (int strip = 0; strip < numStrips; strip++) {
-        float y1, y2;
-        float screenRatio1, screenRatio2;
+        float nearY = screenHeight_ / 2.0f + strip * stripHeight;
+        float farY = nearY + stripHeight;
         
-        if (isFloor) {
-            // Floor: render from horizon downward
-            y1 = screenHeight_ / 2.0f + strip * stripHeight;
-            y2 = y1 + stripHeight;
-            screenRatio1 = (y1 - screenHeight_ / 2.0f) / (screenHeight_ / 2.0f);
-            screenRatio2 = (y2 - screenHeight_ / 2.0f) / (screenHeight_ / 2.0f);
-        } else {
-            // Ceiling: render from top to horizon
-            y2 = strip * stripHeight;
-            y1 = y2 + stripHeight;
-            screenRatio2 = (screenHeight_ / 2.0f - y2) / (screenHeight_ / 2.0f);
-            screenRatio1 = (screenHeight_ / 2.0f - y1) / (screenHeight_ / 2.0f);
-        }
+        // Calculate distances for this strip
+        float nearDist = tileSize * (0.5f + strip * 0.5f);
+        float farDist = tileSize * (0.5f + (strip + 1) * 0.5f);
         
-        screenRatio1 = std::max(screenRatio1, 0.001f);
-        screenRatio2 = std::max(screenRatio2, 0.001f);
+        // Calculate world coordinates for strip corners
+        float nearLeftX = playerPos.x + std::cos(leftAngle) * nearDist;
+        float nearLeftY = playerPos.y + std::sin(leftAngle) * nearDist;
+        float nearRightX = playerPos.x + std::cos(rightAngle) * nearDist;
+        float nearRightY = playerPos.y + std::sin(rightAngle) * nearDist;
         
-        float straightDist1 = eyeHeight / screenRatio1;
-        float straightDist2 = eyeHeight / screenRatio2;
+        float farLeftX = playerPos.x + std::cos(leftAngle) * farDist;
+        float farLeftY = playerPos.y + std::sin(leftAngle) * farDist;
+        float farRightX = playerPos.x + std::cos(rightAngle) * farDist;
+        float farRightY = playerPos.y + std::sin(rightAngle) * farDist;
         
-        glColor3f(brightness, brightness, brightness);
+        // Draw strip
+        glBegin(GL_QUADS);
+        glTexCoord2f(nearLeftX / tileSize, nearLeftY / tileSize);
+        glVertex2f(0, nearY);
         
-        for (int col = 0; col < numColumns; col++) {
-            float leftX = col * columnWidth;
-            float rightX = (col + 1) * columnWidth;
-            
-            // Calculate ray angles
-            float leftRatio = leftX / screenWidth_;
-            float rightRatio = rightX / screenWidth_;
-            float leftAngle = playerAngle - fovRad / 2.0f + leftRatio * fovRad;
-            float rightAngle = playerAngle - fovRad / 2.0f + rightRatio * fovRad;
-            
-            // Calculate horizontal angle offset from center (fisheye correction)
-            float leftAngleOffset = leftAngle - playerAngle;
-            float rightAngleOffset = rightAngle - playerAngle;
-            
-            float dist1Left = straightDist1 / std::cos(leftAngleOffset);
-            float dist1Right = straightDist1 / std::cos(rightAngleOffset);
-            float dist2Left = straightDist2 / std::cos(leftAngleOffset);
-            float dist2Right = straightDist2 / std::cos(rightAngleOffset);
-            
-            // Calculate ray direction vectors
-            float leftDirX = std::cos(leftAngle);
-            float leftDirY = std::sin(leftAngle);
-            float rightDirX = std::cos(rightAngle);
-            float rightDirY = std::sin(rightAngle);
-            
-            // Calculate world positions for all 4 corners
-            float x1Left = playerPos.x + leftDirX * dist1Left;
-            float y1Left = playerPos.y + leftDirY * dist1Left;
-            float x1Right = playerPos.x + rightDirX * dist1Right;
-            float y1Right = playerPos.y + rightDirY * dist1Right;
-            
-            float x2Left = playerPos.x + leftDirX * dist2Left;
-            float y2Left = playerPos.y + leftDirY * dist2Left;
-            float x2Right = playerPos.x + rightDirX * dist2Right;
-            float y2Right = playerPos.y + rightDirY * dist2Right;
-            
-            glBegin(GL_QUADS);
-            glTexCoord2f(x1Left / tileSize, y1Left / tileSize);
-            glVertex2f(leftX, y1);
-            
-            glTexCoord2f(x1Right / tileSize, y1Right / tileSize);
-            glVertex2f(rightX, y1);
-            
-            glTexCoord2f(x2Right / tileSize, y2Right / tileSize);
-            glVertex2f(rightX, y2);
-            
-            glTexCoord2f(x2Left / tileSize, y2Left / tileSize);
-            glVertex2f(leftX, y2);
-            glEnd();
-        }
+        glTexCoord2f(nearRightX / tileSize, nearRightY / tileSize);
+        glVertex2f(screenWidth_, nearY);
+        
+        glTexCoord2f(farRightX / tileSize, farRightY / tileSize);
+        glVertex2f(screenWidth_, farY);
+        
+        glTexCoord2f(farLeftX / tileSize, farLeftY / tileSize);
+        glVertex2f(0, farY);
+        glEnd();
     }
     
     glDisable(GL_TEXTURE_2D);
 }
 
-void Renderer::drawFloorTiled(const Player& player, const Map& map) {
-    GLuint floorTexID = textureManager_.getTextureID(4);
-    drawHorizontalPlane(player, map, floorTexID, RenderConfig::FLOOR_BRIGHTNESS, true);
-}
-
 void Renderer::drawCeilingTiled(const Player& player, const Map& map) {
-    GLuint ceilingTexID = textureManager_.getTextureID(50);
-    drawHorizontalPlane(player, map, ceilingTexID, RenderConfig::CEILING_BRIGHTNESS, false);
+    // Get ceiling texture (using dark ceiling texture)
+    GLuint ceilingTexID = textureManager_.getTextureID(50); // ceiling
+    
+    glEnable(GL_TEXTURE_2D);
+    glBindTexture(GL_TEXTURE_2D, ceilingTexID);
+    
+    // Enable perspective correction hint for better texture quality
+    glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
+    
+    Vec2 playerPos = player.getPosition();
+    float playerAngle = player.getAngle();
+    float tileSize = map.getTileSize();
+    
+    // Calculate view frustum
+    float fovRad = GameConfig::FOV * Math::DEG_TO_RAD;
+    float leftAngle = playerAngle - fovRad / 2.0f;
+    float rightAngle = playerAngle + fovRad / 2.0f;
+    
+    // Apply brightness
+    float brightness = RenderConfig::CEILING_BRIGHTNESS;
+    glColor3f(brightness, brightness, brightness);
+    
+    // Draw ceiling in multiple horizontal strips for better perspective
+    int numStrips = RenderConfig::FLOOR_STRIPS;
+    float stripHeight = (screenHeight_ / 2.0f) / numStrips;
+    
+    for (int strip = 0; strip < numStrips; ++strip) {
+        // Ceiling goes from top (0) to middle (screenHeight/2)
+        // Reverse order: strip 0 is farthest, strip N is nearest
+        float farY = strip * stripHeight;
+        float nearY = farY + stripHeight;
+        
+        // Calculate distances (reversed for ceiling)
+        float farDist = tileSize * (0.5f + (numStrips - strip - 1) * 0.5f);
+        float nearDist = tileSize * (0.5f + (numStrips - strip) * 0.5f);
+        
+        // Calculate world coordinates for strip corners
+        float farLeftX = playerPos.x + std::cos(leftAngle) * farDist;
+        float farLeftY = playerPos.y + std::sin(leftAngle) * farDist;
+        float farRightX = playerPos.x + std::cos(rightAngle) * farDist;
+        float farRightY = playerPos.y + std::sin(rightAngle) * farDist;
+        
+        float nearLeftX = playerPos.x + std::cos(leftAngle) * nearDist;
+        float nearLeftY = playerPos.y + std::sin(leftAngle) * nearDist;
+        float nearRightX = playerPos.x + std::cos(rightAngle) * nearDist;
+        float nearRightY = playerPos.y + std::sin(rightAngle) * nearDist;
+        
+        // Draw strip
+        glBegin(GL_QUADS);
+        glTexCoord2f(farLeftX / tileSize, farLeftY / tileSize);
+        glVertex2f(0, farY);
+        
+        glTexCoord2f(farRightX / tileSize, farRightY / tileSize);
+        glVertex2f(screenWidth_, farY);
+        
+        glTexCoord2f(nearRightX / tileSize, nearRightY / tileSize);
+        glVertex2f(screenWidth_, nearY);
+        
+        glTexCoord2f(nearLeftX / tileSize, nearLeftY / tileSize);
+        glVertex2f(0, nearY);
+        glEnd();
+    }
+    
+    glDisable(GL_TEXTURE_2D);
 }
-
 
 void Renderer::present() {
     glutSwapBuffers();
