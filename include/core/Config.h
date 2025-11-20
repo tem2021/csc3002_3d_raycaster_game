@@ -6,14 +6,16 @@ namespace Math {
     constexpr float TWO_PI = 6.2831853071f;
     constexpr float HALF_PI = 1.5707963267f;
     constexpr float DEG_TO_RAD = 0.0174533f;
+    constexpr float RAD_TO_DEG = 57.2957795f;
     constexpr float EPSILON = 1e-5f;
 }
 
 namespace GameConfig {
+    constexpr float FOV = 60.0f;    // between 0.0f to 180.0f
+                                   
     constexpr float ROTATION_SPEED = 0.0005f;
     constexpr float MOVE_SPEED_FACTOR = 0.1f;
     constexpr float SPRINT_MULTIPLIER = 2.0f;   // SPRINT_SPEED / MOVE_SPEED
-    constexpr float FOV = 60.0f;
     constexpr int TARGET_FPS = 60;
     constexpr int FRAME_TIME_MS = 1000 / TARGET_FPS;
     constexpr int WINDOW_WIDTH = 1280;
@@ -21,15 +23,17 @@ namespace GameConfig {
 }
 
 namespace RenderConfig {
+    constexpr float RESOLUTION_RATIO = 6;   // Larger for higher resolution
+    constexpr int FLOOR_TEXTURE_ID = 4;     // DEFINE the TEXTURE you want to use
+    constexpr int CEILING_TEXTURE_ID = 2;
+                                           
     constexpr float WALL_BRIGHTNESS_H = 0.8f;  // BRIGHTNESS_OF_HORIZONTAL_WALL
     constexpr float WALL_BRIGHTNESS_V = 0.6f;  // BRIGHTNESS_OF_VERTICAL_WALL
-    constexpr float FLOOR_BRIGHTNESS = 0.3f;
-    constexpr float CEILING_BRIGHTNESS = 0.2f;
-    constexpr float MIN_BRIGHTNESS = 0.15f;
-    constexpr float MAX_FLOOR_DIST = 10.0f;
+    constexpr float FLOOR_BRIGHTNESS = 0.5f;
+    constexpr float CEILING_BRIGHTNESS = 0.5f;
+    constexpr float FOV_HEIGHT =  53.13010235415598f;
     constexpr float CROSSHAIR_SIZE = 0.01f;
     constexpr float MIN_WALL_DISTANCE = 0.1f;  // Minimum distance to prevent texture distortion
-    constexpr int FLOOR_STRIPS = 8;  // Number of horizontal strips for floor rendering (higher = better quality)
 }
 
 namespace PlayerConfig {

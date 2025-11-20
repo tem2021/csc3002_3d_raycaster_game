@@ -2,7 +2,8 @@
 # Format: ID (0 - 255):filename(.h):display_name
 #
 # Lines starting with # and empty lines will be ignored
-# 0 is reserved for empty space; 50 is reserved for ceiling texture 
+# 0 is reserved for empty space; 
+# Use Config.h to define the textures for floor and ceiling
 
 # Empty space (required)
 0:null:Empty
