@@ -6,6 +6,7 @@ namespace Math {
     constexpr float TWO_PI = 6.2831853071f;
     constexpr float HALF_PI = 1.5707963267f;
     constexpr float DEG_TO_RAD = 0.0174533f;
+    constexpr float RAD_TO_DEG = 57.2957795f;
     constexpr float EPSILON = 1e-5f;
 }
 

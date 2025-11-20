@@ -41,7 +41,7 @@ private:
     TextureManager textureManager_;
     
     void drawText(int x, int y, const std::string& text);
-    void drawWall(int screenX, float distance, const RayHit& hit, const Map& map);
+    void drawWall(float screenX, float deltaX, float distance, const RayHit& hit, const Map& map);
     void drawFloorTiled(const Player& player, const Map& map);
     void drawCeilingTiled(const Player& player, const Map& map);
 };
