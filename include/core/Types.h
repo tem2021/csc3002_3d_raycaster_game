@@ -10,7 +10,6 @@ struct Vec2 {
     
     Vec2() = default;
     Vec2(float x, float y) : x(x), y(y) {}
-    Vec2(const Vec2& other) : x(other.x), y(other.y) {}
     
     Vec2 operator+(const Vec2& other) const {
         return Vec2{x + other.x, y + other.y};

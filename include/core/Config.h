@@ -24,7 +24,7 @@ namespace GameConfig {
 namespace RenderConfig {
     constexpr float WALL_BRIGHTNESS_H = 0.8f;  // BRIGHTNESS_OF_HORIZONTAL_WALL
     constexpr float WALL_BRIGHTNESS_V = 0.6f;  // BRIGHTNESS_OF_VERTICAL_WALL
-    constexpr float FLOOR_BRIGHTNESS = 0.3f;
+    constexpr float FLOOR_BRIGHTNESS = 0.5f;
     constexpr float CEILING_BRIGHTNESS = 0.2f;
     constexpr float MIN_BRIGHTNESS = 0.15f;
     constexpr float MAX_FLOOR_DIST = 10.0f;
