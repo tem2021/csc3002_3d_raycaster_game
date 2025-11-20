@@ -106,52 +106,65 @@ Vec2 Renderer::realPos(float distanceToProjectedPlane,
 }
 
 void Renderer::drawFloor(float screenX, float deltaX, float projectedH, float tileSize, float ca, float rayAngle, Vec2& playerPos) {
-
-    float cosRayAngle = std::cos(rayAngle);
-    float sinRayAngle = std::sin(rayAngle);
-    float cosCa = std::cos(ca);
-
-    glColor3f(RenderConfig::FLOOR_BRIGHTNESS, RenderConfig::FLOOR_BRIGHTNESS, RenderConfig::FLOOR_BRIGHTNESS);
+    
+    if (projectedH > screenHeight_ ) return;
 
     // ensure the rendering width is no smaller than 1.0f
     deltaX = std::max(1.0f, deltaX);
     float startScreenX = screenX - deltaX; 
     startScreenX = std::max(0.0f, startScreenX);
 
-    if (projectedH > screenHeight_ ) return;
-    float pixelH = (screenHeight_ / 2.0f) + projectedH / 2.0f;
-    Vec2 texPos(0.0f, 0.0f);
+    // useful const
+    const float cosRayAngle = std::cos(rayAngle);
+    const float sinRayAngle = std::sin(rayAngle);
+    const float cosCa = std::cos(ca);
+    const float pixelEnd = (screenHeight_ / 2.0f) + projectedH / 2.0f;
+    const float baseQuadHeight = RenderConfig::FLOOR_BASE_QUADHEIGHT;
+//    const float fogStart = RenderConfig::FOG_START_DIST * tileSize; 
+//    const float fogEnd = RenderConfig::FOG_END_DIST * tileSize;
+//    const float doubQuadHeight = baseQuadHeight * 2.0f;
 
-    GLuint texID = textureManager_.getTextureID(1);
+    // rendering pixel position and corresponding tex position
+    float quadHeight = baseQuadHeight;
+    float pixelY = screenHeight_;
+    float pixelH = screenHeight_;
+    Vec2 texPos(0.0f, 0.0f);
 
     // Draw textured wall
     // use default texture unit 0; No shader
+    GLuint texID = textureManager_.getTextureID(1);
+
+    glColor3f(RenderConfig::FLOOR_BRIGHTNESS, RenderConfig::FLOOR_BRIGHTNESS, RenderConfig::FLOOR_BRIGHTNESS);
     glEnable(GL_TEXTURE_2D);
     glBindTexture(GL_TEXTURE_2D, texID);
     glBegin(GL_QUADS);
 
-    int quadHeight = 1;
+    while (pixelY >= pixelEnd){
+//        float depth = tileSize * screenHeight_ / pixelH;
+//        if (depth > fogEnd) break;
+//        else if (depth > fogStart) quadHeight = baseQuadHeight * 2.0f;
+//        else if (depth > fogStart / 2) quadHeight = doubQuadHeight;
+//        else quadHeight = baseQuadHeight;
 
-    while (pixelH <= screenHeight_ ){
-        Vec2 rp = realPos(screenHeight_, tileSize, projectedH, cosCa, cosRayAngle, sinRayAngle,playerPos);
+        Vec2 rp = realPos(screenHeight_, tileSize, pixelH, cosCa, cosRayAngle, sinRayAngle,playerPos);
         texPos.x = std::fmod(std::fabs(rp.x), tileSize) / tileSize;
         texPos.y = std::fmod(std::fabs(rp.y), tileSize) / tileSize;
 
         // Draw quad with correct texture coordinates with counter-clockwise
         glTexCoord2f(texPos.x, texPos.y ); 
-        glVertex2f(startScreenX, pixelH);
+        glVertex2f(startScreenX, pixelY - quadHeight);
         
         glTexCoord2f(texPos.x, texPos.y ); 
-        glVertex2f(startScreenX, pixelH + quadHeight);
+        glVertex2f(startScreenX, pixelY);
         
         glTexCoord2f(texPos.x, texPos.y ); 
-        glVertex2f(screenX, pixelH + quadHeight);
+        glVertex2f(screenX, pixelY);
         
         glTexCoord2f(texPos.x, texPos.y ); 
-        glVertex2f(screenX, pixelH );
+        glVertex2f(screenX, pixelY - quadHeight);
 
-        pixelH += quadHeight;
-        projectedH += 2 * quadHeight;
+        pixelY -= quadHeight;
+        pixelH -= 2 * quadHeight;
     }
 
     glEnd();
