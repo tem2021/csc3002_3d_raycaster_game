@@ -42,7 +42,7 @@ private:
     
     Vec2 realPos(float distanceToProjectedPlane, float tileSize, float projectedH, float cosCa, float cosRayAngle, float sinRayAngle, Vec2& playerPos);
     void drawText(int x, int y, const std::string& text);
-    void drawHorizontalPlane(float screenX, float deltaX, float projectedH, float tileSize, float ca, float rayAngle, Vec2& playerPos);
+    void drawHorizontalPlane(bool isFloor, float screenX, float deltaX, float projectedH, float tileSize, float ca, float rayAngle, Vec2& playerPos);
     void drawWall(float screenX, float deltaX, float projectedH, const RayHit& hit);
 };
 

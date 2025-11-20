@@ -15,7 +15,6 @@
 #include "data/textures/CUHK_SZ.h"
 #include "data/textures/Hajimi.h"
 
-#include "data/textures/ceiling.h"
 #include "rendering/TextureManager.h"
 
 #include <GL/freeglut_std.h>
@@ -97,7 +96,6 @@ void Game::loadTextures() {
     texManager.loadTexture(7, GLASS_DATA); 
     texManager.loadTexture(8, MARBLE_DATA);
     texManager.loadTexture(9, CONCRETE_DATA);
-    texManager.loadTexture(50, CEILING_DATA);
     texManager.loadTexture(100, CUHK_SZ_DATA);
     texManager.loadTexture(101, HAJIMI_DATA);
     
@@ -150,7 +148,8 @@ void Game::render() {
         player_->getPosition(),
         player_->getAngle(),
         GameConfig::FOV,
-        screenWidth_
+        //screenWidth_
+        GameConfig::FOV * RenderConfig::RESOLUTION_RATIO
     );
     
     // render 3d View

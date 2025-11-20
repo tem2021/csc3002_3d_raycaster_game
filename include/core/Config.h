@@ -22,23 +22,17 @@ namespace GameConfig {
 }
 
 namespace RenderConfig {
+    constexpr float RESOLUTION_RATIO = 6;   // Larger for higher resolution
+    constexpr int FLOOR_TEXTURE_ID = 4;     // DEFINE the TEXTURE you want to use
+    constexpr int CEILING_TEXTURE_ID = 2;
+                                           
     constexpr float WALL_BRIGHTNESS_H = 0.8f;  // BRIGHTNESS_OF_HORIZONTAL_WALL
     constexpr float WALL_BRIGHTNESS_V = 0.6f;  // BRIGHTNESS_OF_VERTICAL_WALL
     constexpr float FLOOR_BRIGHTNESS = 0.5f;
-    constexpr float CEILING_BRIGHTNESS = 0.2f;
-
-    //constexpr float MIN_BRIGHTNESS = 0.15f;
-    //constexpr float MAX_FLOOR_DIST = 10.0f;
-
+    constexpr float CEILING_BRIGHTNESS = 0.5f;
+    constexpr float FOV_HEIGHT =  53.13010235415598f;
     constexpr float CROSSHAIR_SIZE = 0.01f;
     constexpr float MIN_WALL_DISTANCE = 0.1f;  // Minimum distance to prevent texture distortion
-
-    constexpr float FLOOR_BASE_QUADHEIGHT = 1.0f;   // Smaller the QUADHEIGHT, better the graph property
-    constexpr int FLOOR_STRIPS = 8;  // Number of horizontal strips for floor rendering (higher = better quality)
-                                    
-//    constexpr float FOG_START_DIST = 2.0f;   
-//    constexpr float FOG_END_DIST = 8.0f;   
-//    constexpr float FOG_COLOR = 0.05f;  // Dark fog
 }
 
 namespace PlayerConfig {

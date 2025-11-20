@@ -1,7 +1,6 @@
 #include "rendering/Renderer.h"
 #include "core/Config.h"
 #include "core/Types.h"
-
 #ifdef _WIN32
     #include <GL/freeglut.h>
     #include <GL/gl.h>
@@ -66,15 +65,14 @@ void Renderer::draw3DView(const std::vector<RayHit>& rayHits,
         // transfer to corresponding screen pixel: this will linearly stretch or compress the 
         // projection on X axis
         screenX = screenX * screenWidth_ /  projectedPlaneWidth;
-
         float correctedDist = hit.distance * std::cos(ca);
 
         // ensure the correctness of rendering wall textures when player is very close to the wall
         correctedDist = std::max(correctedDist, RenderConfig::MIN_WALL_DISTANCE);
-
         // calculate wall height and draw wall with texture
         float projectedH = map.getTileSize() * screenHeight_ / correctedDist;
-        drawHorizontalPlane(screenX, screenX - previousScreenX, projectedH, map.getTileSize(), ca, rayAngle, playerPos);
+        drawHorizontalPlane(true, screenX, screenX - previousScreenX, projectedH, map.getTileSize(), ca, rayAngle, playerPos);
+        drawHorizontalPlane(false, screenX, screenX - previousScreenX, projectedH, map.getTileSize(), ca, rayAngle, playerPos);
         drawWall(screenX, screenX - previousScreenX, projectedH, hit);
 
         previousScreenX = screenX;
@@ -101,7 +99,7 @@ Vec2 Renderer::realPos(float distanceToProjectedPlane,
     return Vec2(x, y);
 }
 
-void Renderer::drawHorizontalPlane(float screenX, float deltaX, float projectedH, float tileSize, float ca, float rayAngle, Vec2& playerPos) {
+void Renderer::drawHorizontalPlane(bool isFloor, float screenX, float deltaX, float projectedH, float tileSize, float ca, float rayAngle, Vec2& playerPos) {
     if (projectedH > screenHeight_ ) return;
 
     // ensure the rendering width is no smaller than 1.0f
@@ -113,38 +111,38 @@ void Renderer::drawHorizontalPlane(float screenX, float deltaX, float projectedH
     const float cosRayAngle = std::cos(rayAngle);
     const float sinRayAngle = std::sin(rayAngle);
     const float cosCa = std::cos(ca);
-    const float baseQuadHeight = RenderConfig::FLOOR_BASE_QUADHEIGHT;
+    const float quadHeight = screenHeight_ / RenderConfig::FOV_HEIGHT / RenderConfig::RESOLUTION_RATIO;
 
     // rendering pixel position and corresponding tex position
-    float quadHeight = baseQuadHeight;
     Vec2 texPos(0.0f, 0.0f);
     float pixelH = screenHeight_;
-    float pixelY = screenHeight_;
+    float pixelY = isFloor ? screenHeight_ : 0;
 
     // Draw textured wall
     // use default texture unit 0; No shader
-    GLuint floorID = textureManager_.getTextureID(4);
-    GLuint ceilID = textureManager_.getTextureID(2);
+    GLuint floorID = isFloor ? 
+        textureManager_.getTextureID(RenderConfig::FLOOR_TEXTURE_ID) 
+        : textureManager_.getTextureID(RenderConfig::CEILING_TEXTURE_ID);
 
-    glColor3f(RenderConfig::FLOOR_BRIGHTNESS, RenderConfig::FLOOR_BRIGHTNESS, RenderConfig::FLOOR_BRIGHTNESS);
     glEnable(GL_TEXTURE_2D);
+    glBindTexture(GL_TEXTURE_2D, floorID);
+    glBegin(GL_QUADS);
+
+    if (isFloor) 
+        glColor3f(RenderConfig::FLOOR_BRIGHTNESS, RenderConfig::FLOOR_BRIGHTNESS, RenderConfig::FLOOR_BRIGHTNESS);
+    else 
+        glColor3f(RenderConfig::CEILING_BRIGHTNESS, RenderConfig::CEILING_BRIGHTNESS,RenderConfig::CEILING_BRIGHTNESS);
 
     while (pixelH > projectedH){
         Vec2 rp = realPos(screenHeight_, tileSize, pixelH, cosCa, cosRayAngle, sinRayAngle,playerPos);
         texPos.x = std::fmod(std::fabs(rp.x), tileSize) / tileSize;
         texPos.y = std::fmod(std::fabs(rp.y), tileSize) / tileSize;
 
-        float endFloor = pixelY - quadHeight;
-        float endCeiling =  pixelY + quadHeight;
-        float ceilingY = screenHeight_ - pixelY;
-
+        float endY = isFloor ? pixelY - quadHeight : pixelY + quadHeight;
         // Draw quad with correct texture coordinates 
         // Floor Texture
-        glBindTexture(GL_TEXTURE_2D, floorID);
-        glBegin(GL_QUADS);
-       
         glTexCoord2f(texPos.x, texPos.y ); 
-        glVertex2f(startScreenX, endFloor);
+        glVertex2f(startScreenX, endY);
         
         glTexCoord2f(texPos.x, texPos.y ); 
         glVertex2f(startScreenX, pixelY);
@@ -153,32 +151,13 @@ void Renderer::drawHorizontalPlane(float screenX, float deltaX, float projectedH
         glVertex2f(screenX, pixelY);
         
         glTexCoord2f(texPos.x, texPos.y ); 
-        glVertex2f(screenX, endFloor);
+        glVertex2f(screenX, endY);
 
-        glEnd();
-
-        // Ceiling Texture
-        glBindTexture(GL_TEXTURE_2D, ceilID);
-        glBegin(GL_QUADS);
-
-        glTexCoord2f(texPos.x, texPos.y ); 
-        glVertex2f(startScreenX, endCeiling);
-        
-        glTexCoord2f(texPos.x, texPos.y ); 
-        glVertex2f(startScreenX, ceilingY);
-        
-        glTexCoord2f(texPos.x, texPos.y ); 
-        glVertex2f(screenX, ceilingY);
-        
-        glTexCoord2f(texPos.x, texPos.y ); 
-        glVertex2f(screenX, endCeiling);
-
-        glEnd();
-
-        pixelY =  pixelY - quadHeight ;
+        pixelY =  isFloor ? pixelY - quadHeight : pixelY + quadHeight;
         pixelH -= 2 * quadHeight;
     }
 
+    glEnd();
     glDisable(GL_TEXTURE_2D);
     glColor3f(1.0f, 1.0f, 1.0f);
 }
