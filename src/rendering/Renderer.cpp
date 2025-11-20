@@ -1,5 +1,6 @@
 #include "rendering/Renderer.h"
 #include "core/Config.h"
+#include "core/Types.h"
 
 #ifdef _WIN32
     #include <GL/freeglut.h>
@@ -62,36 +63,60 @@ void Renderer::draw3DView(const std::vector<RayHit>& rayHits,
         float ca = player.getAngle() - rayAngle;
         float deltaAngle = HalfFOV - i * angleStep;
 
+        // Here I modify the original Raycaster to ensure the linear performance
         // get X intersection of casting ray on Projected Plane
         screenX = projectedPlaneWidth / 2.0f - distanceToProjectedPlane * std::tan(deltaAngle);     
         // transfer to corresponding screen pixel: this will linearly stretch or compress the 
         // projection on X axis
         screenX = screenX * screenWidth_ /  projectedPlaneWidth;
 
-        while (ca < 0.0f) ca += Math::TWO_PI;
-        while (ca > Math::TWO_PI) ca -= Math::TWO_PI;
-        
         float correctedDist = hit.distance * std::cos(ca);
 
         // ensure the correctness of rendering wall textures when player is very close to the wall
         correctedDist = std::max(correctedDist, RenderConfig::MIN_WALL_DISTANCE);
 
-        // draw wall with texture
-        // Here I modify the original Raycaster to ensure the linear performance
-
-
-        drawWall(screenX, screenX - previousScreenX,  correctedDist, hit, map);
+        // calculate wall height and draw wall with texture
+        float projectedH = map.getTileSize() * screenHeight_ / correctedDist;
+        drawWall(screenX, screenX - previousScreenX, projectedH, hit);
         previousScreenX = screenX;
     }
 }
 
-void Renderer::drawWall(float screenX, float deltaX, float distance, const RayHit& hit, const Map& map) {
+Vec2 Renderer::realPos(float distanceToProjectedPlane, 
+        float tileSize,
+        float projectedH, 
+        float ca,  
+        float rayAngle, 
+        Vec2& playerPos) 
+{
+    // assume the cameraHeight is tileSize/2
+    // tana = (h / 2 )/ distanceToProjectedPlane;
+    // depth = (tileSize / 2) / tana
+    float depth = tileSize * distanceToProjectedPlane / projectedH;
+    float dist = depth / std::cos(ca);
 
-    // calculate wall height
-    // this is the direct result of the Perspective Projection 
-    // the increasing of the angle is suffcient small, hence the endpoints of the rays moves 
-    // approximately the same distance each time 
-    float lineH = map.getTileSize() * screenHeight_ / distance;
+    float x = playerPos.x + dist * std::cos(rayAngle); 
+    float y = playerPos.y + dist * std::sin(rayAngle);
+
+    return Vec2(x, y);
+}
+
+void Renderer::drawFloor(float screenX, float deltaX, float projectedH, float tileSize, float ca, float rayAngle, Vec2& playerPos) {
+    // ensure the rendering width is no smaller than 1.0f
+    deltaX = std::max(1.0f, deltaX);
+    float startScreenX = screenX - deltaX; 
+    startScreenX = std::max(0.0f, startScreenX);
+
+    if (projectedH > screenHeight_ ) return;
+    float pixelH = (screenHeight_ / 2.0f) + projectedH / 2.0f;
+
+    while (pixelH <= screenHeight_ ){
+        Vec2 rp = realPos(screenHeight_, tileSize, projectedH, ca, rayAngle ,playerPos);
+        pixelH += 1.0f;
+    }
+}
+
+void Renderer::drawWall(float screenX, float deltaX, float projectedH, const RayHit& hit) {
 
     // ensure the rendering width is no smaller than 1.0f
     deltaX = std::max(1.0f, deltaX);
@@ -103,16 +128,16 @@ void Renderer::drawWall(float screenX, float deltaX, float distance, const RayHi
     float texEndY = 1.0f;
     
     // If wall is taller than screen, we need to clip texture coordinates
-    if (lineH > screenHeight_) {
-        float visibleRatio = screenHeight_ / lineH;
+    if (projectedH > screenHeight_) {
+        float visibleRatio = screenHeight_ / projectedH;
         float clipAmount = (1.0f - visibleRatio) / 2.0f;
         texStartY = clipAmount;
         texEndY = 1.0f - clipAmount;
-        lineH = screenHeight_;
+        projectedH = screenHeight_;
     }
     
     // Starting point of the wall 
-    float lineO = (screenHeight_ / 2.0f) - lineH / 2.0f;
+    float startH = (screenHeight_ / 2.0f) - projectedH / 2.0f;
     
     // Get texture for this wall type
     GLuint texID = textureManager_.getTextureID(hit.wallType);
@@ -134,16 +159,16 @@ void Renderer::drawWall(float screenX, float deltaX, float distance, const RayHi
         // Draw quad with correct texture coordinates with counter-clockwise
         glBegin(GL_QUADS);
         glTexCoord2f(hit.wallHitX, texStartY); 
-        glVertex2f(startScreenX, lineO);
+        glVertex2f(startScreenX, startH);
         
         glTexCoord2f(hit.wallHitX, texEndY); 
-        glVertex2f(startScreenX, lineO + lineH);
+        glVertex2f(startScreenX, startH + projectedH);
         
         glTexCoord2f(hit.wallHitX, texEndY); 
-        glVertex2f(screenX, lineO + lineH);
+        glVertex2f(screenX, startH + projectedH);
         
         glTexCoord2f(hit.wallHitX, texStartY); 
-        glVertex2f(screenX, lineO);
+        glVertex2f(screenX, startH);
         glEnd();
 
         glDisable(GL_TEXTURE_2D);

@@ -40,10 +40,12 @@ private:
     // initialize the TextureManager in Renderer
     TextureManager textureManager_;
     
+    Vec2 realPos(float distanceToProjectedPlane, float tileSize, float projectedH, float ca, float rayAngle, Vec2& playerPos);
     void drawText(int x, int y, const std::string& text);
-    void drawWall(float screenX, float deltaX, float distance, const RayHit& hit, const Map& map);
+    void drawWall(float screenX, float deltaX, float projectedH, const RayHit& hit);
     void drawFloorTiled(const Player& player, const Map& map);
     void drawCeilingTiled(const Player& player, const Map& map);
+    void drawFloor(float screenX, float deltaX, float projectedH, float tileSize, float ca, float rayAngle, Vec2& playerPos);
 };
 
 #endif // RENDERER_H
