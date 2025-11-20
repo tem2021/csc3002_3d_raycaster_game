@@ -62,15 +62,20 @@ void Renderer::draw3DView(const std::vector<RayHit>& rayHits,
         // Here I modify the original Raycaster to ensure the linear performance
         // get X intersection of casting ray on Projected Plane
         screenX = projectedPlaneWidth / 2.0f - distanceToProjectedPlane * std::tan(deltaAngle);     
-        // transfer to corresponding screen pixel: this will linearly stretch or compress the 
-        // projection on X axis
-        screenX = screenX * screenWidth_ /  projectedPlaneWidth;
+        // transfer to corresponding screen pixel: this will linearly stretch or compress the projection on X axis
+        float stretchRatio = screenWidth_ /  projectedPlaneWidth;
+        screenX = screenX * stretchRatio;
+
         float correctedDist = hit.distance * std::cos(ca);
 
         // ensure the correctness of rendering wall textures when player is very close to the wall
         correctedDist = std::max(correctedDist, RenderConfig::MIN_WALL_DISTANCE);
+
         // calculate wall height and draw wall with texture
+        // stretch the projectedH too to ensure shapes of object stay the same
         float projectedH = map.getTileSize() * screenHeight_ / correctedDist;
+        projectedH = projectedH * stretchRatio;
+
         drawHorizontalPlane(true, screenX, screenX - previousScreenX, projectedH, map.getTileSize(), ca, rayAngle, playerPos);
         drawHorizontalPlane(false, screenX, screenX - previousScreenX, projectedH, map.getTileSize(), ca, rayAngle, playerPos);
         drawWall(screenX, screenX - previousScreenX, projectedH, hit);
