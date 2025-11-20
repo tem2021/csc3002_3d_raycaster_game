@@ -18,7 +18,7 @@
 #include <memory>
 #include <cstdlib>
 
-// Unique Global Game Instance
+// Unique Global Game Initialize
 std::unique_ptr<Game> g_game;
 
 // GLUT Callback Function
