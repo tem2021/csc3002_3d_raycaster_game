@@ -14,6 +14,7 @@
 #include "data/textures/concrete.h"
 #include "data/textures/CUHK_SZ.h"
 #include "data/textures/Hajimi.h"
+#include "data/textures/pistol.h"
 
 #include "rendering/TextureManager.h"
 
@@ -87,6 +88,7 @@ void Game::loadTextures() {
     TextureManager& texManager = renderer_->getTextureManager();
     
     // Load textures with their IDs (matching map data)
+    // Wall Texture
     texManager.loadTexture(1, BRICK_DATA);
     texManager.loadTexture(2, WOOD_DATA);
     texManager.loadTexture(3, METAL_DATA);
@@ -98,6 +100,9 @@ void Game::loadTextures() {
     texManager.loadTexture(9, CONCRETE_DATA);
     texManager.loadTexture(100, CUHK_SZ_DATA);
     texManager.loadTexture(101, HAJIMI_DATA);
+
+    //Weapon Texture
+    texManager.loadTexture(10, PISTOL_DATA);
     
     std::cout << "✓ All textures loaded successfully!" << std::endl;
 }
@@ -161,8 +166,9 @@ void Game::render() {
     
     // render debug information
     renderer_->drawDebugInfo(*player_, inputManager_->shouldShowInfo());
-    
-    renderer_->drawHealthBar(*player_);
+
+    // render player HUD
+    renderer_->drawHUD(*player_);
     
     renderer_->present();
 }

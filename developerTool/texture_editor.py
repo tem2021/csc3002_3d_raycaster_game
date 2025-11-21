@@ -331,7 +331,7 @@ def export_png():
     png_filename = textures_dir / f"{texture_name}.png"
     
     try:
-        img = Image.fromarray(texture_data, mode='RGB')
+        img = Image.fromarray(texture_data, mode='RGBA')
         img.save(png_filename, 'PNG')
         print(f"✓ Exported PNG to {png_filename}")
         return True
