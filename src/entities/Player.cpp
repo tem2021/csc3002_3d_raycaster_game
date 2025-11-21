@@ -3,10 +3,8 @@
 #include <cmath>
 
 Player::Player(const Vec2& position, float angle, float moveSpeed, int health)
-    : position_(position), angle_(angle), moveSpeed_(moveSpeed), health_(health) {
+    : position_(position), angle_(angle), moveSpeed_(moveSpeed), health_(health), hasWeapon_(false) {
     updateDirection();
-    // Initialize with a default pistol
-    weapon_ = std::make_unique<Weapon>(WeaponType::PISTOL, 25, 12, 0.3f, 100.0f);
 }
 
 void Player::updateDirection() {
@@ -62,24 +60,4 @@ void Player::strafeRight(const Map& map, float speedMultiplier) {
     Vec2 strafeDir{-std::sin(angle_) * moveSpeed_ * speedMultiplier, 
                    std::cos(angle_) * moveSpeed_ * speedMultiplier};
     tryMove(strafeDir, map);
-}
-
-bool Player::fireWeapon() {
-    if (weapon_) {
-        return weapon_->fire();
-    }
-    return false;
-}
-
-void Player::reloadWeapon() {
-    if (weapon_) {
-        weapon_->reload();
-    }
-}
-
-void Player::takeDamage(int damage) {
-    health_ -= damage;
-    if (health_ < 0) {
-        health_ = 0;
-    }
 }

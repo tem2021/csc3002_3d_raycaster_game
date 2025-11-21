@@ -3,8 +3,6 @@
 
 #include "core/Types.h"
 #include "world/Map.h"
-#include "entities/Weapon.h"
-#include <memory>
 
 class Player {
 public:
@@ -25,12 +23,10 @@ public:
     
     int getHealth() const { return health_; }
     
-    // Weapon-related methods
-    Weapon* getWeapon() { return weapon_.get(); }
-    const Weapon* getWeapon() const { return weapon_.get(); }
-    bool fireWeapon();
-    void reloadWeapon();
-    void takeDamage(int damage);
+    // Weapon state management
+    bool hasWeapon() const { return hasWeapon_; }
+    void equipWeapon() { hasWeapon_ = true; }
+    void unequipWeapon() { hasWeapon_ = false; }
     
 private:
     Vec2 position_;
@@ -39,7 +35,7 @@ private:
     float moveSpeed_;
 
     int health_;
-    std::unique_ptr<Weapon> weapon_;
+    bool hasWeapon_;  // 玩家是否持有武器
     
     // Update the velocity (moveSpeed) component on x and y
     void updateDirection();
