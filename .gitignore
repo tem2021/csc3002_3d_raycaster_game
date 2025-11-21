@@ -5,4 +5,5 @@ raycaster.dSYM
 obj/
 bin/*
 !bin/*.dll
-build/
+build/_codeql_build_dir/
+_codeql_detected_source_root
