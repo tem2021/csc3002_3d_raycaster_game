@@ -165,7 +165,7 @@ void Game::handleWeaponFire() {
         return;  // Weapon couldn't fire (no ammo or cooldown)
     }
     
-    // Cast a ray from the player's position in the direction they're facing
+    // Get player info
     Vec2 playerPos = player_->getPosition();
     float playerAngle = player_->getAngle();
     
@@ -176,39 +176,69 @@ void Game::handleWeaponFire() {
     float weaponRange = weapon->getRange();
     int weaponDamage = weapon->getDamage();
     
-    // Check if we hit any enemies in the center of the screen
-    // Find the closest enemy in the firing direction
-    Enemy* closestEnemy = nullptr;
-    float closestDist = weaponRange;
+    // Cast a ray from the player's position in the direction they're facing
+    // This uses the same raycasting logic as the renderer
+    RayHit wallHit = raycaster_->castRay(playerPos, playerAngle);
     
+    // Determine the maximum distance to check for enemies
+    // Either the weapon range or the distance to the wall, whichever is closer
+    float maxCheckDistance = weaponRange;
+    if (wallHit.hit && wallHit.distance < weaponRange) {
+        maxCheckDistance = wallHit.distance;
+    }
+    
+    // Now check which enemy (if any) is hit by this ray
+    Enemy* hitEnemy = nullptr;
+    float closestEnemyDist = maxCheckDistance;
+    
+    // Check each enemy to see if the ray intersects with it
     for (auto& enemy : enemies_) {
         if (!enemy.isAlive()) continue;
         
         Vec2 enemyPos = enemy.getPosition();
+        
+        // Calculate the distance from player to enemy
         Vec2 toEnemy = enemyPos - playerPos;
         float distToEnemy = toEnemy.length();
         
-        if (distToEnemy > weaponRange) continue;
+        // Skip if enemy is farther than our max check distance
+        if (distToEnemy > closestEnemyDist) continue;
         
-        // Calculate angle to enemy
-        float angleToEnemy = std::atan2(toEnemy.y, toEnemy.x);
-        float angleDiff = angleToEnemy - playerAngle;
+        // Calculate the perpendicular distance from enemy to the ray
+        // The ray goes in direction (cos(playerAngle), sin(playerAngle))
+        Vec2 rayDir = Vec2{std::cos(playerAngle), std::sin(playerAngle)};
         
-        // Normalize angle difference to [-PI, PI]
-        while (angleDiff > Math::PI) angleDiff -= Math::TWO_PI;
-        while (angleDiff < -Math::PI) angleDiff += Math::TWO_PI;
+        // Project toEnemy onto the ray direction
+        float projectionLength = toEnemy.x * rayDir.x + toEnemy.y * rayDir.y;
         
-        // Check if enemy is within a narrow cone (roughly center of screen)
-        float aimTolerance = 0.1f;  // About 5.7 degrees
-        if (std::abs(angleDiff) < aimTolerance && distToEnemy < closestDist) {
-            closestEnemy = &enemy;
-            closestDist = distToEnemy;
+        // Skip if enemy is behind the player
+        if (projectionLength < 0) continue;
+        
+        // Calculate the perpendicular distance
+        Vec2 projectedPoint = rayDir * projectionLength;
+        Vec2 perpVector = toEnemy - projectedPoint;
+        float perpDistance = perpVector.length();
+        
+        // Define enemy hitbox radius (half of tile size is reasonable)
+        float enemyRadius = map_->getTileSize() * 0.3f;
+        
+        // Check if the ray intersects the enemy's hitbox
+        if (perpDistance < enemyRadius) {
+            // Calculate actual hit distance along the ray
+            float actualHitDistance = projectionLength - std::sqrt(enemyRadius * enemyRadius - perpDistance * perpDistance);
+            if (actualHitDistance < 0) actualHitDistance = 0;
+            
+            // This enemy is hit! Check if it's the closest one
+            if (actualHitDistance < closestEnemyDist) {
+                hitEnemy = &enemy;
+                closestEnemyDist = actualHitDistance;
+            }
         }
     }
     
-    // Apply damage to the closest enemy in crosshair
-    if (closestEnemy) {
-        closestEnemy->takeDamage(weaponDamage);
+    // Apply damage to the hit enemy
+    if (hitEnemy) {
+        hitEnemy->takeDamage(weaponDamage);
     }
 }
 
