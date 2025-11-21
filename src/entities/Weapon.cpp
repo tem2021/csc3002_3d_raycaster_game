@@ -1,44 +1,16 @@
 #include "entities/Weapon.h"
 
-Weapon::Weapon(WeaponType type, int damage, int maxAmmo, float fireRate, float range)
-    : type_(type), damage_(damage), currentAmmo_(maxAmmo), maxAmmo_(maxAmmo),
-      fireRate_(fireRate), range_(range), cooldownTimer_(0.0f) {
-}
-
-bool Weapon::fire() {
-    if (!canFire()) {
-        return false;
-    }
+RayHit WeaponHitDetector::fireRay(const Vec2& origin, float angle, const Raycaster& raycaster) {
+    // 使用raycaster发射一条射线
+    // 这条射线从玩家位置出发，沿着玩家朝向的方向（正中间）
+    RayHit hit = raycaster.castRay(origin, angle);
     
-    currentAmmo_--;
-    resetCooldown();
-    return true;
-}
-
-void Weapon::reload() {
-    currentAmmo_ = maxAmmo_;
-}
-
-void Weapon::update(float deltaTime) {
-    if (cooldownTimer_ > 0.0f) {
-        cooldownTimer_ -= deltaTime;
-        if (cooldownTimer_ < 0.0f) {
-            cooldownTimer_ = 0.0f;
-        }
-    }
-}
-
-bool Weapon::canFire() const {
-    return currentAmmo_ > 0 && cooldownTimer_ <= 0.0f;
-}
-
-void Weapon::addAmmo(int amount) {
-    currentAmmo_ += amount;
-    if (currentAmmo_ > maxAmmo_) {
-        currentAmmo_ = maxAmmo_;
-    }
-}
-
-void Weapon::resetCooldown() {
-    cooldownTimer_ = fireRate_;
+    // 返回命中信息，包含：
+    // - hit.hit: 是否击中墙壁
+    // - hit.distance: 到墙壁的距离
+    // - hit.hitPoint: 击中点的坐标
+    // - hit.isVertical: 是否击中垂直墙面
+    // - hit.wallType: 墙壁类型（特征值）
+    // - hit.wallHitX: 击中墙壁的X坐标（用于纹理）
+    return hit;
 }
