@@ -24,7 +24,6 @@ public:
     void drawDebugInfo(const Player& player, bool show);
     void drawHealthValue(const Player& player);
     void drawHealthBar(const Player& player);
-    void drawWeaponInfo(const Player& player);
     void present();
     
     TextureManager& getTextureManager() { return textureManager_; }

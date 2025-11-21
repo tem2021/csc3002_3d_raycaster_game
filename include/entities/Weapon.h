@@ -4,6 +4,20 @@
 #include "core/Types.h"
 #include "world/Raycaster.h"
 
+// 武器类 - 最小实现，仅用于编译通过
+class Weapon {
+public:
+    Weapon() {}
+    
+    // 最小必要接口
+    int getDamage() const { return 0; }
+    float getRange() const { return 0.0f; }
+    
+    bool fire() { return false; }
+    void reload() {}
+    void update(float deltaTime) {}
+};
+
 // 武器命中检测类
 // 功能：从玩家位置发射一条正中间的射线，检测是否击中墙壁并返回墙壁特征
 // 注意：只有在玩家持有武器状态下才会返回有效的命中结果

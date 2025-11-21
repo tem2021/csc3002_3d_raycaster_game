@@ -1,5 +1,6 @@
 #include "core/Game.h"
 #include "core/Config.h"
+#include "entities/Weapon.h"
 #include "data/maps/level1.h"
 #include <cmath>
 
@@ -266,7 +267,6 @@ void Game::render() {
     renderer_->drawDebugInfo(*player_, inputManager_->shouldShowInfo());
     
     renderer_->drawHealthBar(*player_);
-    renderer_->drawWeaponInfo(*player_);
     
     renderer_->present();
 }
