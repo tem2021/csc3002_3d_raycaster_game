@@ -449,6 +449,9 @@ void Renderer::drawWeaponInfo(const Player& player) {
         case WeaponType::RIFLE:
             weaponName = "RIFLE";
             break;
+        default:
+            weaponName = "UNKNOWN";
+            break;
     }
     
     // Draw weapon name
