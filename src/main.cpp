@@ -83,10 +83,6 @@ int main(int argc, char* argv[]) {
     int height = glutGet(GLUT_SCREEN_HEIGHT);
     glClearColor(0.3f, 0.3f, 0.3f, 0.0f);
     gluOrtho2D(0, width, height, 0);
-
-    // Enable Blending 
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     
     // Hide Cursor
     glutSetCursor(GLUT_CURSOR_NONE);

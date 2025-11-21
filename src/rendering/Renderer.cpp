@@ -24,6 +24,10 @@ Renderer::Renderer(int screenWidth, int screenHeight)
     : screenWidth_(screenWidth), screenHeight_(screenHeight) {
     centerX_ = screenWidth_ / 2;
     centerY_ = screenHeight_ / 2;
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+
 }
 
 void Renderer::clear() {
