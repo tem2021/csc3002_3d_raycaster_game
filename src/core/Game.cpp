@@ -1,6 +1,7 @@
 #include "core/Game.h"
 #include "core/Config.h"
 #include "data/maps/level1.h"
+#include <cmath>
 
 // Include texture data (only those with 3D array format)
 #include "data/textures/brick.h"
@@ -28,7 +29,7 @@
     #include <GL/freeglut.h>
 #endif
 
-Game::Game() : screenWidth_(0), screenHeight_(0) {}
+Game::Game() : screenWidth_(0), screenHeight_(0), deltaTime_(0.0166667f) {}
 
 void Game::init() {
     // gain the size of the screen
@@ -104,6 +105,7 @@ void Game::loadTextures() {
 
 void Game::handleInput() {
     processPlayerInput();
+    processWeaponInput();
 }
 
 void Game::processPlayerInput() {
@@ -132,10 +134,81 @@ void Game::processPlayerInput() {
 }
 
 void Game::update() {
+    // Update weapon cooldown
+    if (player_->getWeapon()) {
+        player_->getWeapon()->update(deltaTime_);
+    }
+    
     Vec2 playerPos = player_->getPosition();
 
     for (auto& e : enemies_) {
-        e.update(playerPos, *map_);
+        if (e.isAlive()) {
+            e.update(playerPos, *map_);
+        }
+    }
+}
+
+void Game::processWeaponInput() {
+    // Handle weapon firing
+    if (inputManager_->isFirePressed()) {
+        handleWeaponFire();
+    }
+    
+    // Handle reload (consume the reload key press)
+    if (inputManager_->consumeReloadPress()) {
+        player_->reloadWeapon();
+    }
+}
+
+void Game::handleWeaponFire() {
+    if (!player_->fireWeapon()) {
+        return;  // Weapon couldn't fire (no ammo or cooldown)
+    }
+    
+    // Cast a ray from the player's position in the direction they're facing
+    Vec2 playerPos = player_->getPosition();
+    float playerAngle = player_->getAngle();
+    
+    // Get weapon stats
+    const Weapon* weapon = player_->getWeapon();
+    if (!weapon) return;
+    
+    float weaponRange = weapon->getRange();
+    int weaponDamage = weapon->getDamage();
+    
+    // Check if we hit any enemies in the center of the screen
+    // Find the closest enemy in the firing direction
+    Enemy* closestEnemy = nullptr;
+    float closestDist = weaponRange;
+    
+    for (auto& enemy : enemies_) {
+        if (!enemy.isAlive()) continue;
+        
+        Vec2 enemyPos = enemy.getPosition();
+        Vec2 toEnemy = enemyPos - playerPos;
+        float distToEnemy = toEnemy.length();
+        
+        if (distToEnemy > weaponRange) continue;
+        
+        // Calculate angle to enemy
+        float angleToEnemy = std::atan2(toEnemy.y, toEnemy.x);
+        float angleDiff = angleToEnemy - playerAngle;
+        
+        // Normalize angle difference to [-PI, PI]
+        while (angleDiff > Math::PI) angleDiff -= Math::TWO_PI;
+        while (angleDiff < -Math::PI) angleDiff += Math::TWO_PI;
+        
+        // Check if enemy is within a narrow cone (roughly center of screen)
+        float aimTolerance = 0.1f;  // About 5.7 degrees
+        if (std::abs(angleDiff) < aimTolerance && distToEnemy < closestDist) {
+            closestEnemy = &enemy;
+            closestDist = distToEnemy;
+        }
+    }
+    
+    // Apply damage to the closest enemy in crosshair
+    if (closestEnemy) {
+        closestEnemy->takeDamage(weaponDamage);
     }
 }
 
@@ -163,6 +236,7 @@ void Game::render() {
     renderer_->drawDebugInfo(*player_, inputManager_->shouldShowInfo());
     
     renderer_->drawHealthBar(*player_);
+    renderer_->drawWeaponInfo(*player_);
     
     renderer_->present();
 }

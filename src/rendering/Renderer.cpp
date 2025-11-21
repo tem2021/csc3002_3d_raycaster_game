@@ -424,3 +424,41 @@ void Renderer::drawEnemies3D(const std::vector<Enemy>& enemies,
 void Renderer::present() {
     glutSwapBuffers();
 }
+
+void Renderer::drawWeaponInfo(const Player& player) {
+    const Weapon* weapon = player.getWeapon();
+    if (!weapon) return;
+    
+    // Display weapon info in the bottom right corner
+    int margin = 20;
+    int x = screenWidth_ - 150;
+    int y = screenHeight_ - 40;
+    
+    std::ostringstream oss;
+    
+    // Get weapon type name
+    std::string weaponName;
+    switch (weapon->getType()) {
+        case WeaponType::PISTOL:
+            weaponName = "PISTOL";
+            break;
+        case WeaponType::SHOTGUN:
+            weaponName = "SHOTGUN";
+            break;
+        case WeaponType::RIFLE:
+            weaponName = "RIFLE";
+            break;
+    }
+    
+    // Draw weapon name
+    drawText(x, y, weaponName);
+    
+    // Draw ammo count
+    oss << "AMMO: " << weapon->getCurrentAmmo() << " / " << weapon->getMaxAmmo();
+    drawText(x, y + 15, oss.str());
+    
+    // Draw reload hint if needed
+    if (weapon->needsReload()) {
+        drawText(x, y + 30, "Press R to reload");
+    }
+}

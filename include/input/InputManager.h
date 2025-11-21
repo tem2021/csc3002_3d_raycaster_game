@@ -12,9 +12,12 @@ public:
     void handleSpecialKeyDown(int key);  // shift for example
     void handleSpecialKeyUp(int key);
     void handleMouseMove(int x, int y);
+    void handleMouseButton(int button, int state, int x, int y);
     
     bool isKeyPressed(unsigned char key) const;
     bool isSprintPressed() const { return sprintPressed_; }
+    bool isFirePressed() const { return firePressed_; }
+    bool consumeReloadPress();
     float consumeMouseDelta();
     bool shouldShowInfo() const { return showInfo_; }
     bool shouldExit() const { return exitRequested_; }
@@ -27,6 +30,8 @@ private:
     bool showInfo_;
     bool exitRequested_;
     bool sprintPressed_;
+    bool firePressed_;
+    bool reloadPressed_;
 
     // use to normalize 'a' and 'A' to 'a'
     unsigned char normalizeKey(unsigned char key) const;   
