@@ -14,6 +14,9 @@ enum class WeaponType {
 // 武器类
 class Weapon {
 public:
+    // Default weapon cooldown in seconds
+    static constexpr float DEFAULT_COOLDOWN = 0.5f;
+    
     Weapon(WeaponType type = WeaponType::PISTOL, int maxAmmo = 10, int damage = 10, float range = 100.0f)
         : type_(type), maxAmmo_(maxAmmo), currentAmmo_(maxAmmo), damage_(damage), range_(range), cooldown_(0.0f) {}
     
@@ -32,7 +35,7 @@ public:
     bool fire() {
         if (!canFire()) return false;
         currentAmmo_--;
-        cooldown_ = 0.5f; // 0.5 second cooldown
+        cooldown_ = DEFAULT_COOLDOWN;
         return true;
     }
     
