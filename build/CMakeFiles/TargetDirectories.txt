@@ -1,3 +1,0 @@
-/home/runner/work/csc3002_3d_raycaster_game/csc3002_3d_raycaster_game/build/CMakeFiles/raycaster.dir
-/home/runner/work/csc3002_3d_raycaster_game/csc3002_3d_raycaster_game/build/CMakeFiles/edit_cache.dir
-/home/runner/work/csc3002_3d_raycaster_game/csc3002_3d_raycaster_game/build/CMakeFiles/rebuild_cache.dir
