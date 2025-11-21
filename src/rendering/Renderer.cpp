@@ -1,6 +1,7 @@
 #include "rendering/Renderer.h"
 #include "core/Config.h"
 #include "core/Types.h"
+#include "entities/Weapon.h"
 #ifdef _WIN32
     #include <GL/freeglut.h>
     #include <GL/gl.h>
