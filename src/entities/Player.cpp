@@ -3,7 +3,7 @@
 #include <cmath>
 
 Player::Player(const Vec2& position, float angle, float moveSpeed, int health)
-    : position_(position), angle_(angle), moveSpeed_(moveSpeed), health_(health) {
+    : position_(position), angle_(angle), moveSpeed_(moveSpeed), health_(health), hasWeapon_(false) {
     updateDirection();
 }
 

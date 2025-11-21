@@ -55,3 +55,13 @@ void Enemy::update(const Vec2& playerPos, const Map& map)
         position_ = newPos;
     }
 }
+
+void Enemy::takeDamage(int damage) {
+    if (!alive_) return;
+    
+    health_ -= damage;
+    if (health_ <= 0) {
+        health_ = 0;
+        alive_ = false;
+    }
+}

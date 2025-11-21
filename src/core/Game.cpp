@@ -1,6 +1,7 @@
 #include "core/Game.h"
 #include "core/Config.h"
 #include "data/maps/level1.h"
+#include <cmath>
 
 // Include texture data (only those with 3D array format)
 #include "data/textures/brick.h"
@@ -28,7 +29,7 @@
     #include <GL/freeglut.h>
 #endif
 
-Game::Game() : screenWidth_(0), screenHeight_(0) {}
+Game::Game() : screenWidth_(0), screenHeight_(0), deltaTime_(0.0166667f) {}
 
 void Game::init() {
     // gain the size of the screen
@@ -104,6 +105,7 @@ void Game::loadTextures() {
 
 void Game::handleInput() {
     processPlayerInput();
+    processWeaponInput();
 }
 
 void Game::processPlayerInput() {
@@ -132,10 +134,111 @@ void Game::processPlayerInput() {
 }
 
 void Game::update() {
+    // Update weapon cooldown
+    if (player_->getWeapon()) {
+        player_->getWeapon()->update(deltaTime_);
+    }
+    
     Vec2 playerPos = player_->getPosition();
 
     for (auto& e : enemies_) {
-        e.update(playerPos, *map_);
+        if (e.isAlive()) {
+            e.update(playerPos, *map_);
+        }
+    }
+}
+
+void Game::processWeaponInput() {
+    // Handle weapon firing
+    if (inputManager_->isFirePressed()) {
+        handleWeaponFire();
+    }
+    
+    // Handle reload (consume the reload key press)
+    if (inputManager_->consumeReloadPress()) {
+        player_->reloadWeapon();
+    }
+}
+
+void Game::handleWeaponFire() {
+    if (!player_->fireWeapon()) {
+        return;  // Weapon couldn't fire (no ammo or cooldown)
+    }
+    
+    // Get player info
+    Vec2 playerPos = player_->getPosition();
+    float playerAngle = player_->getAngle();
+    
+    // Get weapon stats
+    const Weapon* weapon = player_->getWeapon();
+    if (!weapon) return;
+    
+    float weaponRange = weapon->getRange();
+    int weaponDamage = weapon->getDamage();
+    
+    // Cast a ray from the player's position in the direction they're facing
+    // This uses the same raycasting logic as the renderer
+    RayHit wallHit = raycaster_->castRay(playerPos, playerAngle);
+    
+    // Determine the maximum distance to check for enemies
+    // Either the weapon range or the distance to the wall, whichever is closer
+    float maxCheckDistance = weaponRange;
+    if (wallHit.hit && wallHit.distance < weaponRange) {
+        maxCheckDistance = wallHit.distance;
+    }
+    
+    // Now check which enemy (if any) is hit by this ray
+    Enemy* hitEnemy = nullptr;
+    float closestEnemyDist = maxCheckDistance;
+    
+    // Check each enemy to see if the ray intersects with it
+    for (auto& enemy : enemies_) {
+        if (!enemy.isAlive()) continue;
+        
+        Vec2 enemyPos = enemy.getPosition();
+        
+        // Calculate the distance from player to enemy
+        Vec2 toEnemy = enemyPos - playerPos;
+        float distToEnemy = toEnemy.length();
+        
+        // Skip if enemy is farther than our max check distance
+        if (distToEnemy > closestEnemyDist) continue;
+        
+        // Calculate the perpendicular distance from enemy to the ray
+        // The ray goes in direction (cos(playerAngle), sin(playerAngle))
+        Vec2 rayDir = Vec2{std::cos(playerAngle), std::sin(playerAngle)};
+        
+        // Project toEnemy onto the ray direction
+        float projectionLength = toEnemy.x * rayDir.x + toEnemy.y * rayDir.y;
+        
+        // Skip if enemy is behind the player
+        if (projectionLength < 0) continue;
+        
+        // Calculate the perpendicular distance
+        Vec2 projectedPoint = rayDir * projectionLength;
+        Vec2 perpVector = toEnemy - projectedPoint;
+        float perpDistance = perpVector.length();
+        
+        // Define enemy hitbox radius (half of tile size is reasonable)
+        float enemyRadius = map_->getTileSize() * 0.3f;
+        
+        // Check if the ray intersects the enemy's hitbox
+        if (perpDistance < enemyRadius) {
+            // Calculate actual hit distance along the ray
+            float actualHitDistance = projectionLength - std::sqrt(enemyRadius * enemyRadius - perpDistance * perpDistance);
+            if (actualHitDistance < 0) actualHitDistance = 0;
+            
+            // This enemy is hit! Check if it's the closest one
+            if (actualHitDistance < closestEnemyDist) {
+                hitEnemy = &enemy;
+                closestEnemyDist = actualHitDistance;
+            }
+        }
+    }
+    
+    // Apply damage to the hit enemy
+    if (hitEnemy) {
+        hitEnemy->takeDamage(weaponDamage);
     }
 }
 
@@ -163,6 +266,7 @@ void Game::render() {
     renderer_->drawDebugInfo(*player_, inputManager_->shouldShowInfo());
     
     renderer_->drawHealthBar(*player_);
+    renderer_->drawWeaponInfo(*player_);
     
     renderer_->present();
 }

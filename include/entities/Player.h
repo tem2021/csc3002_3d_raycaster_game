@@ -23,6 +23,11 @@ public:
     
     int getHealth() const { return health_; }
     
+    // Weapon state management
+    bool hasWeapon() const { return hasWeapon_; }
+    void equipWeapon() { hasWeapon_ = true; }
+    void unequipWeapon() { hasWeapon_ = false; }
+    
 private:
     Vec2 position_;
     Vec2 direction_;
@@ -30,6 +35,7 @@ private:
     float moveSpeed_;
 
     int health_;
+    bool hasWeapon_;  // 玩家是否持有武器
     
     // Update the velocity (moveSpeed) component on x and y
     void updateDirection();

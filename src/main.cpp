@@ -57,6 +57,10 @@ void mouseMotionCallback(int x, int y) {
     g_game->getInputManager().handleMouseMove(x, y);
 }
 
+void mouseButtonCallback(int button, int state, int x, int y) {
+    g_game->getInputManager().handleMouseButton(button, state, x, y);
+}
+
 int main(int argc, char* argv[]) {
     // Initialize GLUT
     glutInit(&argc, argv);
@@ -94,6 +98,7 @@ int main(int argc, char* argv[]) {
     glutSpecialFunc(specialKeyDownCallback);
     glutSpecialUpFunc(specialKeyUpCallback);
     glutPassiveMotionFunc(mouseMotionCallback);
+    glutMouseFunc(mouseButtonCallback);
     glutTimerFunc(GameConfig::FRAME_TIME_MS, timerCallback, 0);
     
     // Enter the Main Loop

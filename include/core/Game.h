@@ -36,8 +36,11 @@ private:
     std::vector<Enemy> enemies_;
     int screenWidth_;
     int screenHeight_;
+    float deltaTime_;  // Time since last frame
     
     void processPlayerInput();
+    void processWeaponInput();
+    void handleWeaponFire();
     Vec2 findFreeSpawnPoint();
 };
 
