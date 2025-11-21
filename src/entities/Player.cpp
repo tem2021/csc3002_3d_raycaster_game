@@ -1,9 +1,10 @@
 #include "entities/Player.h"
+#include "entities/Weapon.h"
 #include "core/Config.h"
 #include <cmath>
 
 Player::Player(const Vec2& position, float angle, float moveSpeed, int health)
-    : position_(position), angle_(angle), moveSpeed_(moveSpeed), health_(health), hasWeapon_(false) {
+    : position_(position), angle_(angle), moveSpeed_(moveSpeed), health_(health), hasWeapon_(false), weapon_(nullptr) {
     updateDirection();
 }
 
@@ -60,4 +61,15 @@ void Player::strafeRight(const Map& map, float speedMultiplier) {
     Vec2 strafeDir{-std::sin(angle_) * moveSpeed_ * speedMultiplier, 
                    std::cos(angle_) * moveSpeed_ * speedMultiplier};
     tryMove(strafeDir, map);
+}
+
+bool Player::fireWeapon() {
+    if (!weapon_) return false;
+    return weapon_->fire();
+}
+
+void Player::reloadWeapon() {
+    if (weapon_) {
+        weapon_->reload();
+    }
 }

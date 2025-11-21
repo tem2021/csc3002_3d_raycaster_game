@@ -4,6 +4,8 @@
 #include "core/Types.h"
 #include "world/Map.h"
 
+class Weapon;  // Forward declaration
+
 class Player {
 public:
     Player(const Vec2& position, float angle, float moveSpeed, int health);
@@ -28,6 +30,12 @@ public:
     void equipWeapon() { hasWeapon_ = true; }
     void unequipWeapon() { hasWeapon_ = false; }
     
+    // Weapon methods
+    Weapon* getWeapon() { return weapon_; }
+    const Weapon* getWeapon() const { return weapon_; }
+    bool fireWeapon();
+    void reloadWeapon();
+    
 private:
     Vec2 position_;
     Vec2 direction_;
@@ -36,6 +44,7 @@ private:
 
     int health_;
     bool hasWeapon_;  // 玩家是否持有武器
+    Weapon* weapon_;  // 武器指针
     
     // Update the velocity (moveSpeed) component on x and y
     void updateDirection();
