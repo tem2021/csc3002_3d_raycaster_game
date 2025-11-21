@@ -8,6 +8,8 @@ Player::Player(const Vec2& position, float angle, float moveSpeed, int health)
     updateDirection();
 }
 
+Player::~Player() = default;
+
 void Player::updateDirection() {
     direction_.x = std::cos(angle_) * moveSpeed_;
     direction_.y = std::sin(angle_) * moveSpeed_;
