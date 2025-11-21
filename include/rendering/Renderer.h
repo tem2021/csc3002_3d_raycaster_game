@@ -21,9 +21,8 @@ public:
                    const Map& map,
                    const std::vector<RayHit>& rayHits);
     void drawCrosshair();
+    void drawHUD(const Player& player);
     void drawDebugInfo(const Player& player, bool show);
-    void drawHealthValue(const Player& player);
-    void drawHealthBar(const Player& player);
     void present();
     
     TextureManager& getTextureManager() { return textureManager_; }
@@ -44,6 +43,10 @@ private:
     void drawText(int x, int y, const std::string& text);
     void drawHorizontalPlane(bool isFloor, float screenX, float deltaX, float projectedH, float tileSize, float ca, float rayAngle, Vec2& playerPos);
     void drawWall(float screenX, float deltaX, float projectedH, const RayHit& hit);
+
+    // HUD component
+    void drawHealthBar(const Player& player);
+    void drawCurrentWeapon();
 };
 
 #endif // RENDERER_H

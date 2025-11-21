@@ -46,10 +46,13 @@ WIDTH = TEXTURE_SIZE * PIXEL_SIZE + TOOLBAR_W + COLOR_PANEL_W  # Add space for c
 HEIGHT = TEXTURE_SIZE * PIXEL_SIZE
 
 # State
-texture_data = np.full((TEXTURE_SIZE, TEXTURE_SIZE, 3), [255, 255, 255], dtype=np.uint8)
+texture_data = np.full((TEXTURE_SIZE, TEXTURE_SIZE, 4), [0, 0, 0, 0], dtype=np.uint8)       
 texture_name = ""  # Empty means unnamed
 current_texture_file = None
 available_textures = []
+
+# 0=Checkerboard, 1=Magenta (Pink), 2=Black
+background_mode = 0
 
 undo_stack = []
 redo_stack = []
@@ -194,9 +197,9 @@ def create_new_texture(tex_name):
         print(f"Texture file {filename} already exists!")
         return False
     
-    # Create new texture (white background)
-    texture_data = np.full((TEXTURE_SIZE, TEXTURE_SIZE, 3), [255, 255, 255], dtype=np.uint8)
-    
+    # Create new texture (transparent background)
+    texture_data = np.full((TEXTURE_SIZE, TEXTURE_SIZE, 4), [0, 0, 0, 0], dtype=np.uint8)
+
     texture_name = tex_name
     current_texture_file = str(filename)
     
@@ -211,7 +214,7 @@ def create_new_texture(tex_name):
 
 
 def load_rgb_texture(filepath):
-    """Load RGB texture from .h file"""
+    """Load RGBA texture from .h file"""
     global texture_data, texture_name, current_texture_file
     
     try:
@@ -222,9 +225,9 @@ def load_rgb_texture(filepath):
         current_texture_file = filepath
         
         # Find data array
-        pattern = r'DATA\[\d+\]\[\d+\]\[3\]\s*=\s*\{(.*?)\};'
+        pattern = r'DATA\[\d+\]\[\d+\]\[4\]\s*=\s*\{(.*?)\};'
         match = re.search(pattern, content, re.DOTALL)
-        
+
         if not match:
             print(f"Error: Could not find RGB texture data in {filepath}")
             return False
@@ -232,14 +235,16 @@ def load_rgb_texture(filepath):
         data_str = match.group(1)
         
         # Parse RGB data - find all pixels first
-        pixel_pattern = r'\{\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\}'
+        pixel_pattern = r'\{\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\}'
+
         all_pixels = []
         
         for pixel_match in re.finditer(pixel_pattern, data_str):
             r = int(pixel_match.group(1))
             g = int(pixel_match.group(2))
             b = int(pixel_match.group(3))
-            all_pixels.append([r, g, b])
+            a = int(pixel_match.group(4)) 
+            all_pixels.append([r, g, b, a])
         
         # Verify we have exactly 64x64 pixels
         expected_pixels = TEXTURE_SIZE * TEXTURE_SIZE
@@ -267,7 +272,7 @@ def load_rgb_texture(filepath):
 
 
 def export_texture():
-    """Export texture as C++ header file (RGB format)"""
+    """Export texture as C++ header file (RGBA format)"""
     global current_texture_file, texture_name, texture_data
     
     if not texture_name or not current_texture_file:
@@ -280,16 +285,16 @@ def export_texture():
     code = f"#ifndef {tex_name}_TEXTURE_H\n"
     code += f"#define {tex_name}_TEXTURE_H\n\n"
     code += f"// Texture name: {texture_name}\n"
-    code += f"// Format: RGB (Red, Green, Blue)\n"
+    code += f"// Format: RGBA (Red, Green, Blue, Alpha)\n" 
     code += f"// Size: {TEXTURE_SIZE}x{TEXTURE_SIZE}\n\n"
     code += f"constexpr int {tex_name}_SIZE = {TEXTURE_SIZE};\n\n"
     
-    code += f"constexpr unsigned char {tex_name}_DATA[{TEXTURE_SIZE}][{TEXTURE_SIZE}][3] = {{\n"
+    code += f"constexpr unsigned char {tex_name}_DATA[{TEXTURE_SIZE}][{TEXTURE_SIZE}][4] = {{\n"
     for y in range(TEXTURE_SIZE):
         code += "    {"
         for x in range(TEXTURE_SIZE):
-            r, g, b = texture_data[y, x]
-            code += f"{{{r:3d},{g:3d},{b:3d}}}"
+            r, g, b, a = texture_data[y, x]
+            code += f"{{{r:3d},{g:3d},{b:3d},{a:3d}}}" 
             if x < TEXTURE_SIZE - 1:
                 code += ","
         code += "},\n"
@@ -326,7 +331,7 @@ def export_png():
     png_filename = textures_dir / f"{texture_name}.png"
     
     try:
-        img = Image.fromarray(texture_data, mode='RGB')
+        img = Image.fromarray(texture_data, mode='RGBA')
         img.save(png_filename, 'PNG')
         print(f"✓ Exported PNG to {png_filename}")
         return True
@@ -741,7 +746,7 @@ def import_png():
         
         # Load image
         img = Image.open(filepath)
-        img = img.convert('RGB')
+        img = img.convert('RGBA')
         
         # Calculate proportional scaling
         orig_w, orig_h = img.size
@@ -759,8 +764,8 @@ def import_png():
         # Resize image
         img_resized = img.resize((new_w, new_h), Image.Resampling.LANCZOS)
         
-        # Create 64x64 white canvas - update global texture_data
-        texture_data = np.full((TEXTURE_SIZE, TEXTURE_SIZE, 3), [255, 255, 255], dtype=np.uint8)
+        # Create 64x64 transparent canvas - update global texture_data
+        texture_data = np.full((TEXTURE_SIZE, TEXTURE_SIZE, 4), [0, 0, 0, 0], dtype=np.uint8)
         
         # Calculate center position
         paste_x = (TEXTURE_SIZE - new_w) // 2
@@ -1323,6 +1328,7 @@ def draw_help():
             "Ctrl+Y: Redo",
             "Ctrl+K: Toggle color picker",
             "H: Toggle help (press again to close)",
+            "B: Toggle background (Checkers/Pink/Black)",
             "Q: Quit",
         ]),
         ("FILE MANAGEMENT", [
@@ -1423,14 +1429,33 @@ def draw_color_picker():
     screen.blit(hint, (x_margin, HEIGHT - 40))
 
 def draw_texture():
-    """绘制纹理画布"""
+    """Draw texture canvas"""
+    global background_mode
+
     for y in range(TEXTURE_SIZE):
         for x in range(TEXTURE_SIZE):
             px = TOOLBAR_W + x * PIXEL_SIZE
             py = y * PIXEL_SIZE
-            color = tuple(texture_data[y, x])
-            pygame.draw.rect(screen, color, (px, py, PIXEL_SIZE-1, PIXEL_SIZE-1))
-            pygame.draw.rect(screen, (180, 180, 180), (px, py, PIXEL_SIZE-1, PIXEL_SIZE-1), 1)
+            rect = (px, py, PIXEL_SIZE, PIXEL_SIZE)
+
+            if background_mode == 0:  
+                is_light = ((x + y) % 2 == 0)
+                bg_color = (200, 200, 200) if is_light else (140, 140, 140)
+                pygame.draw.rect(screen, bg_color, rect)
+            elif background_mode == 1: 
+                pygame.draw.rect(screen, (255, 0, 255), rect)
+            elif background_mode == 2: 
+                pygame.draw.rect(screen, (0, 0, 0), rect)
+
+            r, g, b, a = texture_data[y, x]
+
+            if a > 0: 
+                pixel_surf = pygame.Surface((PIXEL_SIZE, PIXEL_SIZE), pygame.SRCALPHA)
+                pixel_surf.fill((r, g, b, a))
+                screen.blit(pixel_surf, (px, py))
+
+            grid_color = (80, 80, 80) if background_mode != 2 else (50, 50, 50)
+            pygame.draw.rect(screen, grid_color, rect, 1)
     
     # 绘制预览线条
     if tool == LINE_TOOL and line_start and line_end:
@@ -1676,11 +1701,22 @@ def handle_button_click(pos, now, undo_time, redo_time, export_time, load_time, 
     
     return timers['undo'], timers['redo'], timers['export'], timers['load'], timers['clear'], timers['create']
 
+def get_brush_color():
+    """
+    RETURN the RGBA color according to current mode
+    """
+    global draw_color, mode, ERASE_MODE
+    
+    if mode == ERASE_MODE:
+        return [0, 0, 0, 0]
+    else:
+        return [draw_color[0], draw_color[1], draw_color[2], 255]
+
 def main():
-    """主循环"""
+    """Main Loop"""
     global line_start, line_end, rect_start, rect_end, ellipse_start, ellipse_end
     global show_help, color_picker_mode, load_screen, create_new_mode, draw_color, texture_name
-    global mode, tool, rect_mode, input_text, rgb_input_active_field, rgb_input_texts
+    global mode, tool, rect_mode, input_text, rgb_input_active_field, rgb_input_texts, background_mode
     
     # 尝试加载第一个可用的纹理
     available_textures = scan_texture_files()
@@ -1808,8 +1844,11 @@ def main():
                                 b.active = False
                                 break
                 elif not color_picker_mode and not load_screen:
-                    # 正常模式快捷键
-                    if event.key == pygame.K_h:
+                    if event.key == pygame.K_b and not (pygame.key.get_mods() & pygame.KMOD_CTRL):
+                        background_mode = (background_mode + 1) % 3
+                        mode_names = ["Checkerboard", "Magic Pink", "Black"]
+                        print(f"Background switched to: {mode_names[background_mode]}")
+                    elif event.key == pygame.K_h:
                         show_help = True
                         # Update Help button state
                         for b in extra_buttons:
@@ -1961,7 +2000,7 @@ def main():
                             # Auto-deactivate eyedropper after picking
                             mode = DRAW_MODE
                         elif tool == POINT_TOOL:
-                            color = [255, 255, 255] if mode == ERASE_MODE else draw_color
+                            color = get_brush_color()
                             handle_draw(x, y, color)
                         elif tool == LINE_TOOL:
                             line_start = (x, y)
@@ -2035,20 +2074,20 @@ def main():
                     dragging_slider = None
                 elif not show_help and not color_picker_mode and not create_new_mode and not load_screen:
                     if event.button == 1 and dragging_line and line_start and line_end:
-                        color = [255, 255, 255] if mode == ERASE_MODE else draw_color
+                        color = get_brush_color() 
                         line_cells = bresenham_line(line_start[0], line_start[1], line_end[0], line_end[1])
                         handle_line_draw(line_cells, color)
                         line_start, line_end = None, None
                         dragging_line = False
                     elif event.button == 1 and dragging_rect and rect_start and rect_end:
-                        color = [255, 255, 255] if mode == ERASE_MODE else draw_color
+                        color = get_brush_color()
                         rx0, ry0 = rect_start
                         rx1, ry1 = rect_end
                         handle_rect_draw(rx0, ry0, rx1, ry1, rect_mode, color)
                         rect_start, rect_end = None, None
                         dragging_rect = False
                     elif event.button == 1 and dragging_ellipse and ellipse_start and ellipse_end:
-                        color = [255, 255, 255] if mode == ERASE_MODE else draw_color
+                        color = get_brush_color()
                         ex0, ey0 = ellipse_start
                         ex1, ey1 = ellipse_end
                         handle_ellipse_draw(ex0, ey0, ex1, ey1, rect_mode, color)

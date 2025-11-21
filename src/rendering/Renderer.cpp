@@ -1,6 +1,7 @@
 #include "rendering/Renderer.h"
 #include "core/Config.h"
 #include "core/Types.h"
+#include "entities/Player.h"
 #ifdef _WIN32
     #include <GL/freeglut.h>
     #include <GL/gl.h>
@@ -24,6 +25,10 @@ Renderer::Renderer(int screenWidth, int screenHeight)
     : screenWidth_(screenWidth), screenHeight_(screenHeight) {
     centerX_ = screenWidth_ / 2;
     centerY_ = screenHeight_ / 2;
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+
 }
 
 void Renderer::clear() {
@@ -82,6 +87,11 @@ void Renderer::draw3DView(const std::vector<RayHit>& rayHits,
 
         previousScreenX = screenX;
     }
+}
+
+void Renderer::drawHUD(const Player& player) {
+    drawHealthBar(player);
+    drawCurrentWeapon();
 }
 
 Vec2 Renderer::realPos(float distanceToProjectedPlane, 
@@ -398,7 +408,7 @@ void Renderer::drawEnemies3D(const std::vector<Enemy>& enemies,
         int spriteScreenWidth = (int)height; // 方块怪物：宽度=高度
 
         float screenCenterX = (float)centerRay / numRays * screenWidth_;
-        float centerY = screenHeight_ / 2;
+        float centerY = static_cast<float>(screenHeight_) / 2;
 
         // ------ 逐列渲染 ------ 
         for (int xOffset = -spriteScreenWidth/2; xOffset <= spriteScreenWidth/2; xOffset++) {
@@ -419,6 +429,31 @@ void Renderer::drawEnemies3D(const std::vector<Enemy>& enemies,
             glEnd();
         }
     }
+}
+
+// Example to help you load texture
+void Renderer::drawCurrentWeapon() {
+    GLuint pistolID = textureManager_.getTextureID(10);  //ID define on Game.cpp
+    float pistol_width = RenderConfig::PISTOL_TEXTURE_SIZE;
+    float pistol_height = pistol_width;
+
+    float draw_x = screenWidth_ - pistol_width - 10.0f;
+    float draw_y = screenHeight_ - pistol_height - 10.0f;
+
+    glEnable(GL_TEXTURE_2D);
+    glBindTexture(GL_TEXTURE_2D, pistolID);
+    glColor4f(1.0f, 1.0f, 1.0f, 1.0f); 
+
+
+    glBegin(GL_QUADS);
+        glTexCoord2f(0.0f, 0.0f); glVertex2f(draw_x, draw_y);
+        glTexCoord2f(0.0f, 1.0f); glVertex2f(draw_x, draw_y + pistol_height);
+        glTexCoord2f(1.0f, 1.0f); glVertex2f(draw_x + pistol_width, draw_y + pistol_height);
+        glTexCoord2f(1.0f, 0.0f); glVertex2f(draw_x + pistol_width, draw_y);
+    glEnd();                                            
+
+    glDisable(GL_TEXTURE_2D);
+    glColor3f(1.0f, 1.0f, 1.0f);
 }
 
 void Renderer::present() {
