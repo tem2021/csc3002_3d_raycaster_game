@@ -6,3 +6,4 @@ obj/
 bin/*
 !bin/*.dll
 build/
+developerTool/__pycache__/
