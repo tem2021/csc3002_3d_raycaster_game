@@ -386,7 +386,7 @@ void Renderer::drawEnemies3D(const std::vector<Enemy>& enemies,
         while (angle < -Math::PI) angle += Math::TWO_PI;
         while (angle >  Math::PI) angle -= Math::TWO_PI;
 
-        // 不在视野范围 → 跳过（不浪费绘制）
+        // 不在视野范围 → 跳过
         if (std::fabs(angle) > fov / 2) continue;
 
         sorted.push_back({ &e, dist, angle });
@@ -412,35 +412,53 @@ void Renderer::drawEnemies3D(const std::vector<Enemy>& enemies,
         float spriteHeight = map.getTileSize() * screenHeight_ / dist;
         float halfH = spriteHeight * 0.5f;
 
-        // 敌人 sprite 宽度（等宽）
+        // 宽度 = 高度
         float spriteWidth = spriteHeight;
 
         // 敌人中心投影到屏幕 X 坐标
         float screenCenterX = (float)centerRay / (float)numRays * screenWidth_;
-
         float screenCenterY = screenHeight_ / 2.0f;
+
+        // ====== 1. 加载敌人贴图 ======
+        GLuint tex = textureManager_.getTextureID(enemy->getTextureId());
+        if (tex == 0) continue;
+
+        glEnable(GL_TEXTURE_2D);
+        glBindTexture(GL_TEXTURE_2D, tex);
+        glColor3f(1, 1, 1);
 
         // --- 4. 逐列绘制 sprite ---
         for (int px = -spriteWidth / 2; px <= spriteWidth / 2; px++) {
+
+            // 像素对应的射线索引
             int rayId = centerRay + (px * numRays / screenWidth_);
 
             if (rayId < 0 || rayId >= numRays)
                 continue;
 
-            // --- 重要：深度遮挡 ---
-            // 如果墙比敌人近 → 该竖列被墙挡住 → 不画
+            // --- 深度遮挡 ---
             if (depthBuffer[rayId] < dist)
                 continue;
 
             float screenX = screenCenterX + px;
 
-            // --- 简单画一条竖线（你以后可替换成贴图）---
-            glColor3f(1, 0, 0);
-            glBegin(GL_LINES);
-            glVertex2f(screenX, screenCenterY - halfH);
-            glVertex2f(screenX, screenCenterY + halfH);
+            // ====== 2. 计算贴图 U 坐标 ======
+            float u = (float)(px + spriteWidth / 2) / spriteWidth;
+            float uNext = (float)(px + spriteWidth / 2 + 1) / spriteWidth;
+
+            float x1 = screenX;
+            float x2 = screenX + 1;
+
+            // ====== 3. 用贴图替代红线 ======
+            glBegin(GL_QUADS);
+                glTexCoord2f(u,     0.0f); glVertex2f(x1, screenCenterY - halfH);
+                glTexCoord2f(u,     1.0f); glVertex2f(x1, screenCenterY + halfH);
+                glTexCoord2f(uNext, 1.0f); glVertex2f(x2, screenCenterY + halfH);
+                glTexCoord2f(uNext, 0.0f); glVertex2f(x2, screenCenterY - halfH);
             glEnd();
         }
+
+        glDisable(GL_TEXTURE_2D);
     }
 }
 

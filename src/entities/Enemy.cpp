@@ -13,6 +13,17 @@ void Enemy::update(const Vec2& playerPos, const Map& map)
     float dist = std::sqrt(dx*dx + dy*dy);
 
     if (dist < 0.01f) return;
+    // --- A. 在玩家面前一个合理距离停下来 ---
+
+    float attackRange = 15.0f;   // 可以调大调小
+
+    // 如果已经接近玩家，就停下（不向前移动）
+    if (dist < attackRange) {
+        // 但仍然保持朝向玩家（不转身逃跑，不乱动）
+        // 保持敌人原地“准备攻击”的状态
+        timeOffset_ += 0.015f;   // 保留蛇形动画的小抖动（可删）
+        return;                  // 不执行后续移动逻辑
+    }
 
     // -------------------------
     // 1. 基本方向
@@ -75,8 +86,8 @@ void Enemy::update(const Vec2& playerPos, const Map& map)
     // 4. 合并方向（重新调权重）
     // -------------------------
     Vec2 finalDir = {
-        forward.x * 0.45f + tileAssist.x * 0.35f + perp.x * lateral,
-        forward.y * 0.45f + tileAssist.y * 0.35f + perp.y * lateral
+        forward.x * 0.6f + tileAssist.x * 0.35f + perp.x * lateral,
+        forward.y * 0.6f + tileAssist.y * 0.35f + perp.y * lateral
     };
 
     float lenF = std::sqrt(finalDir.x*finalDir.x + finalDir.y*finalDir.y);
@@ -161,5 +172,4 @@ void Enemy::update(const Vec2& playerPos, const Map& map)
         }
     }
 }
-
 

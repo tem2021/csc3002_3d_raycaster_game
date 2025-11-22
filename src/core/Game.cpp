@@ -15,6 +15,7 @@
 #include "data/textures/CUHK_SZ.h"
 #include "data/textures/Hajimi.h"
 #include "data/textures/pistol.h"
+#include "data/textures/Hippo_1.h"
 
 #include "rendering/TextureManager.h"
 
@@ -104,6 +105,9 @@ void Game::loadTextures() {
     texManager.loadTexture(100, CUHK_SZ_DATA);
     texManager.loadTexture(101, HAJIMI_DATA);
 
+    // Enemy Texture
+    texManager.loadTexture(200, HIPPO_1_DATA);
+
     //Weapon Texture
     texManager.loadTexture(10, PISTOL_DATA);
     
@@ -145,7 +149,37 @@ void Game::update() {
     for (auto& e : enemies_) {
         e.update(playerPos, *map_);
     }
+
+    float minDist = 8.0f;
+    float pushStrength = 0.2f;
+
+    for (int i = 0; i < enemies_.size(); i++) {
+        for (int j = i + 1; j < enemies_.size(); j++) {
+
+            Vec2 p1 = enemies_[i].getPosition();
+            Vec2 p2 = enemies_[j].getPosition();
+
+            float dx = p2.x - p1.x;
+            float dy = p2.y - p1.y;
+            float dist = std::sqrt(dx*dx + dy*dy);
+
+            if (dist < minDist && dist > 0.001f) {
+                float overlap = (minDist - dist) * 0.5f;
+
+                float ux = dx / dist;
+                float uy = dy / dist;
+
+                enemies_[i].addOffset({-ux * overlap * pushStrength,
+                                       -uy * overlap * pushStrength});
+
+                enemies_[j].addOffset({ ux * overlap * pushStrength,
+                                        uy * overlap * pushStrength});
+            }
+        }
+    }
 }
+
+
 
 
 void Game::render() {
