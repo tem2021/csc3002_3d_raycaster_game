@@ -1,6 +1,7 @@
 #include "rendering/Renderer.h"
 #include "core/Config.h"
 #include "core/Types.h"
+#include "entities/Weapon.h"
 #ifdef _WIN32
     #include <GL/freeglut.h>
     #include <GL/gl.h>
@@ -419,6 +420,58 @@ void Renderer::drawEnemies3D(const std::vector<Enemy>& enemies,
             glEnd();
         }
     }
+}
+
+void Renderer::drawWeaponSprite(const Player& player) {
+    // 只在持有武器时绘制
+    if (!player.hasWeapon()) {
+        return;
+    }
+    
+    const Weapon* weapon = player.getWeapon();
+    if (!weapon) {
+        return;
+    }
+    
+    // 根据武器状态选择纹理
+    bool isFiring = weapon->isFiring();
+    int textureId = isFiring ? 201 : 200;  // 200: unfiredgun, 201: firedgun
+    
+    // 获取OpenGL纹理ID
+    GLuint texID = textureManager_.getTextureID(textureId);
+    if (texID == 0) {
+        return;  // 纹理未加载
+    }
+    
+    // 武器精灵尺寸（相对于屏幕高度的百分比）
+    const float spriteHeightRatio = 0.25f;  // 武器占屏幕高度的25%
+    float spriteHeight = screenHeight_ * spriteHeightRatio;
+    float spriteWidth = spriteHeight;  // 保持方形（64x64的纹理）
+    
+    // 位置：屏幕底部中央
+    float spriteX = centerX_ - spriteWidth / 2.0f;
+    float spriteY = screenHeight_ - spriteHeight - 20.0f;  // 距底部20像素
+    
+    // 启用2D纹理和混合
+    glEnable(GL_TEXTURE_2D);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    
+    // 绑定纹理
+    glBindTexture(GL_TEXTURE_2D, texID);
+    
+    // 绘制带纹理的四边形
+    glColor4f(1.0f, 1.0f, 1.0f, 1.0f);  // 白色，不改变纹理颜色
+    glBegin(GL_QUADS);
+        glTexCoord2f(0.0f, 0.0f); glVertex2f(spriteX, spriteY);
+        glTexCoord2f(1.0f, 0.0f); glVertex2f(spriteX + spriteWidth, spriteY);
+        glTexCoord2f(1.0f, 1.0f); glVertex2f(spriteX + spriteWidth, spriteY + spriteHeight);
+        glTexCoord2f(0.0f, 1.0f); glVertex2f(spriteX, spriteY + spriteHeight);
+    glEnd();
+    
+    // 禁用纹理和混合
+    glDisable(GL_BLEND);
+    glDisable(GL_TEXTURE_2D);
 }
 
 void Renderer::present() {

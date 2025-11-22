@@ -7,15 +7,23 @@
 // 武器类 - 最小实现，仅用于编译通过
 class Weapon {
 public:
-    Weapon() {}
+    Weapon() : isFiring_(false), fireAnimationTime_(0.0f) {}
     
     // 最小必要接口
     int getDamage() const { return 0; }
     float getRange() const { return 0.0f; }
     
-    bool fire() { return false; }
+    bool fire();
     void reload() {}
-    void update(float deltaTime) {}
+    void update(float deltaTime);
+    
+    // 武器动画状态
+    bool isFiring() const { return isFiring_; }
+    
+private:
+    bool isFiring_;              // 是否正在发射
+    float fireAnimationTime_;    // 发射动画计时器
+    static constexpr float FIRE_ANIMATION_DURATION = 0.2f;  // 发射动画持续时间（秒）
 };
 
 // 武器命中检测类

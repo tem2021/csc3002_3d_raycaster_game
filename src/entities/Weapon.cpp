@@ -1,5 +1,23 @@
 #include "entities/Weapon.h"
 
+bool Weapon::fire() {
+    // 开始发射动画
+    isFiring_ = true;
+    fireAnimationTime_ = 0.0f;
+    return true;
+}
+
+void Weapon::update(float deltaTime) {
+    // 更新发射动画
+    if (isFiring_) {
+        fireAnimationTime_ += deltaTime;
+        if (fireAnimationTime_ >= FIRE_ANIMATION_DURATION) {
+            isFiring_ = false;
+            fireAnimationTime_ = 0.0f;
+        }
+    }
+}
+
 RayHit WeaponHitDetector::fireRay(const Vec2& origin, float angle, bool hasWeapon, const Raycaster& raycaster) {
     // 只有在持有武器状态下才进行命中检测
     if (!hasWeapon) {

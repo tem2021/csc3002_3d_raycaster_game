@@ -4,8 +4,9 @@
 #include <cmath>
 
 Player::Player(const Vec2& position, float angle, float moveSpeed, int health)
-    : position_(position), angle_(angle), moveSpeed_(moveSpeed), health_(health), hasWeapon_(false) {
+    : position_(position), angle_(angle), moveSpeed_(moveSpeed), health_(health), hasWeapon_(true) {
     updateDirection();
+    weapon_ = std::make_unique<Weapon>();
 }
 
 Player::~Player() = default;
