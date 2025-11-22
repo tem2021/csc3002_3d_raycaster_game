@@ -6,11 +6,18 @@ set(CMAKE_CXX_STANDARD 17)
 # Include headers
 include_directories(include)
 
-# Recursively find .cpp files
-file(GLOB SRC_FILES
-    "${PROJECT_SOURCE_DIR}/src/*.cpp"
-	"${PROJECT_SOURCE_DIR}/src/*/*.cpp"
-	"${PROJECT_SOURCE_DIR}/src/*/*/*.cpp"
+# Explicitly list all source files (recommended for better IDE support and build reliability)
+set(SRC_FILES
+    src/main.cpp
+    src/core/Game.cpp
+    src/entities/Enemy.cpp
+    src/entities/Player.cpp
+    src/entities/Weapon.cpp
+    src/input/InputManager.cpp
+    src/rendering/Renderer.cpp
+    src/rendering/TextureManager.cpp
+    src/world/Map.cpp
+    src/world/Raycaster.cpp
 )
 
 add_executable(raycaster ${SRC_FILES})
