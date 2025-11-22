@@ -1,14 +1,14 @@
 #include "entities/Weapon.h"
 
 bool Weapon::fire() {
-    // 开始发射动画
+    // Start fire animation
     isFiring_ = true;
     fireAnimationTime_ = 0.0f;
     return true;
 }
 
 void Weapon::update(float deltaTime) {
-    // 更新发射动画
+    // Update fire animation
     if (isFiring_) {
         fireAnimationTime_ += deltaTime;
         if (fireAnimationTime_ >= FIRE_ANIMATION_DURATION) {
