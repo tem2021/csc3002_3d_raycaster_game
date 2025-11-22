@@ -24,14 +24,14 @@ void Enemy::update(const Vec2& playerPos, const Map& map)
     // ---- 玩家视角影响怪物偏移 ----
     // 越朝向怪物的方向看，怪物越向右偏一点
     float angleToPlayer = std::atan2(dy, dx);
-    float playerAngle = 0.0f; // 若要使用玩家角度：传入参数 or 全局获取
-    float viewInfluence = std::sin(playerAngle - angleToPlayer);
+    // float playerAngle = 0.0f; // 若要使用玩家角度：传入参数 or 全局获取
+    // float viewInfluence = std::sin(playerAngle - angleToPlayer);
 
     // ---- 计算蛇形偏移量 ----
     float snake = std::sin(timeOffset_ * 2.5f); // 频率可调
     float strafeFactor = 0.35f;                // 左右摆的幅度
 
-    float lateral = snake * 0.7f + viewInfluence * 0.5f;
+    float lateral =  snake * 0.5f;
 
     Vec2 finalDir = forward + perp * (lateral * strafeFactor);
 
@@ -48,10 +48,45 @@ void Enemy::update(const Vec2& playerPos, const Map& map)
 
     // ---- 碰撞检查 ----
     int ts = map.getTileSize();
-    int mx = (int)newPos.x / ts;
-    int my = (int)newPos.y / ts;
 
-    if (!map.isWall(mx, my)) {
+    // 封装：判断某点是否碰墙
+    auto isBlocked = [&](float x, float y) {
+        int tileX = (int)x / ts;
+        int tileY = (int)y / ts;
+        return map.isWall(tileX, tileY);
+    };
+
+    // 封装：判断圆形 hitbox 是否被阻挡
+    auto circleBlocked = [&](float cx, float cy) {
+        return (
+            isBlocked(cx + radius_, cy) ||
+            isBlocked(cx - radius_, cy) ||
+            isBlocked(cx, cy + radius_) ||
+            isBlocked(cx, cy - radius_)
+        );
+    };
+
+    // ---- 先尝试整体移动 ----
+    if (!circleBlocked(newPos.x, newPos.y)) {
         position_ = newPos;
+        return;
     }
+
+    // ---- 整体不行 → 尝试滑动（仅 X）----
+    Vec2 tryX = { newPos.x, position_.y };
+    if (!circleBlocked(tryX.x, tryX.y)) {
+        position_.x = tryX.x;
+        return;
+    }
+
+    // ---- 尝试滑动（仅 Y）----
+    Vec2 tryY = { position_.x, newPos.y };
+    if (!circleBlocked(tryY.x, tryY.y)) {
+        position_.y = tryY.y;
+        return;
+    }
+
+    // 三个方向都被墙挡 → 什么都不做（原地）
+
+
 }
