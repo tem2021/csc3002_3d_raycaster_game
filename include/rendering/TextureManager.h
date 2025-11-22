@@ -22,6 +22,9 @@ public:
     // Load a 64x64 texture
     void loadTexture(int id, const unsigned char data[64][64][3]);
     
+    // Load a 64x64 RGBA texture
+    void loadTextureRGBA(int id, const unsigned char data[64][64][4]);
+    
     // Get OpenGL texture ID for a wall type
     GLuint getTextureID(int wallType) const;
     

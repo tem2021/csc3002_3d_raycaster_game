@@ -16,6 +16,8 @@
 #include "data/textures/concrete.h"
 #include "data/textures/CUHK_SZ.h"
 #include "data/textures/Hajimi.h"
+#include "data/textures/unfiredgun.h"
+#include "data/textures/firedgun.h"
 
 #include "rendering/TextureManager.h"
 
@@ -100,6 +102,10 @@ void Game::loadTextures() {
     texManager.loadTexture(9, CONCRETE_DATA);
     texManager.loadTexture(100, CUHK_SZ_DATA);
     texManager.loadTexture(101, HAJIMI_DATA);
+    
+    // Load weapon textures (RGBA)
+    texManager.loadTextureRGBA(200, UNFIREDGUN_DATA);
+    texManager.loadTextureRGBA(201, FIREDGUN_DATA);
     
     std::cout << "✓ All textures loaded successfully!" << std::endl;
 }
@@ -262,6 +268,9 @@ void Game::render() {
 
     // render crosshair
     renderer_->drawCrosshair();
+    
+    // render weapon sprite
+    renderer_->drawWeaponSprite(*player_);
     
     // render debug information
     renderer_->drawDebugInfo(*player_, inputManager_->shouldShowInfo());

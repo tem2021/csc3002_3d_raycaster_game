@@ -1,6 +1,7 @@
 #include "rendering/Renderer.h"
 #include "core/Config.h"
 #include "core/Types.h"
+#include "entities/Weapon.h"
 #ifdef _WIN32
     #include <GL/freeglut.h>
     #include <GL/gl.h>
@@ -419,6 +420,63 @@ void Renderer::drawEnemies3D(const std::vector<Enemy>& enemies,
             glEnd();
         }
     }
+}
+
+void Renderer::drawWeaponSprite(const Player& player) {
+    // Only draw when weapon is equipped
+    if (!player.hasWeapon()) {
+        return;
+    }
+    
+    const Weapon* weapon = player.getWeapon();
+    if (!weapon) {
+        return;
+    }
+    
+    // Constants for weapon sprite rendering
+    constexpr int TEXTURE_ID_UNFIRED_GUN = 200;
+    constexpr int TEXTURE_ID_FIRED_GUN = 201;
+    constexpr float WEAPON_SPRITE_HEIGHT_RATIO = 0.25f;  // 25% of screen height
+    constexpr float WEAPON_SPRITE_BOTTOM_MARGIN = 20.0f;  // Distance from bottom in pixels
+    
+    // Select texture based on weapon state
+    bool isFiring = weapon->isFiring();
+    int textureId = isFiring ? TEXTURE_ID_FIRED_GUN : TEXTURE_ID_UNFIRED_GUN;
+    
+    // Get OpenGL texture ID
+    GLuint texID = textureManager_.getTextureID(textureId);
+    if (texID == 0) {
+        return;  // Texture not loaded
+    }
+    
+    // Weapon sprite dimensions (keep square to match 64x64 texture)
+    float spriteHeight = screenHeight_ * WEAPON_SPRITE_HEIGHT_RATIO;
+    float spriteWidth = spriteHeight;
+    
+    // Position: bottom center of screen
+    float spriteX = centerX_ - spriteWidth / 2.0f;
+    float spriteY = screenHeight_ - spriteHeight - WEAPON_SPRITE_BOTTOM_MARGIN;
+    
+    // Enable 2D texture and blending for transparency
+    glEnable(GL_TEXTURE_2D);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    
+    // Bind texture
+    glBindTexture(GL_TEXTURE_2D, texID);
+    
+    // Draw textured quad
+    glColor4f(1.0f, 1.0f, 1.0f, 1.0f);  // White color (no tint)
+    glBegin(GL_QUADS);
+        glTexCoord2f(0.0f, 0.0f); glVertex2f(spriteX, spriteY);
+        glTexCoord2f(1.0f, 0.0f); glVertex2f(spriteX + spriteWidth, spriteY);
+        glTexCoord2f(1.0f, 1.0f); glVertex2f(spriteX + spriteWidth, spriteY + spriteHeight);
+        glTexCoord2f(0.0f, 1.0f); glVertex2f(spriteX, spriteY + spriteHeight);
+    glEnd();
+    
+    // Disable texture and blending
+    glDisable(GL_BLEND);
+    glDisable(GL_TEXTURE_2D);
 }
 
 void Renderer::present() {
