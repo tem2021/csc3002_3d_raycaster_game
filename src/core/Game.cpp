@@ -15,6 +15,7 @@
 #include "data/textures/CUHK_SZ.h"
 #include "data/textures/Hajimi.h"
 #include "data/textures/pistol.h"
+#include "data/textures/Hippo_1.h"
 
 #include "rendering/TextureManager.h"
 
@@ -68,13 +69,16 @@ void Game::init() {
         screenWidth_ / 2,
         screenHeight_ / 2
     );
-    // --- init enemies --- generate 10 enemies at free positions
+    // --- init enemies ---
     enemies_.clear();
-    for (int i = 0; i < 10; ++i) {
-    enemies_.push_back(Enemy(findFreeSpawnPoint(), 0.3f));
 
+    // 新的全地图均匀生成（例如 20 个）
+    int enemyCount = 40;
+    auto spawnPoints = findDistributedSpawnPoints(enemyCount);
+
+    for (auto& pos : spawnPoints) {
+        enemies_.push_back(Enemy(pos, 0.3f));
 }
-
 
     
     // Load all textures
@@ -100,6 +104,9 @@ void Game::loadTextures() {
     texManager.loadTexture(9, CONCRETE_DATA);
     texManager.loadTexture(100, CUHK_SZ_DATA);
     texManager.loadTexture(101, HAJIMI_DATA);
+
+    // Enemy Texture
+    texManager.loadTexture(200, HIPPO_1_DATA);
 
     //Weapon Texture
     texManager.loadTexture(10, PISTOL_DATA);
@@ -142,7 +149,37 @@ void Game::update() {
     for (auto& e : enemies_) {
         e.update(playerPos, *map_);
     }
+
+    float minDist = 8.0f;
+    float pushStrength = 0.2f;
+
+    for (int i = 0; i < enemies_.size(); i++) {
+        for (int j = i + 1; j < enemies_.size(); j++) {
+
+            Vec2 p1 = enemies_[i].getPosition();
+            Vec2 p2 = enemies_[j].getPosition();
+
+            float dx = p2.x - p1.x;
+            float dy = p2.y - p1.y;
+            float dist = std::sqrt(dx*dx + dy*dy);
+
+            if (dist < minDist && dist > 0.001f) {
+                float overlap = (minDist - dist) * 0.5f;
+
+                float ux = dx / dist;
+                float uy = dy / dist;
+
+                enemies_[i].addOffset({-ux * overlap * pushStrength,
+                                       -uy * overlap * pushStrength});
+
+                enemies_[j].addOffset({ ux * overlap * pushStrength,
+                                        uy * overlap * pushStrength});
+            }
+        }
+    }
 }
+
+
 
 
 void Game::render() {
@@ -187,17 +224,88 @@ Vec2 Game::findFreeSpawnPoint() {
     int py = p.y / tileSize;
 
     while (true) {
-        int x = px + (rand() % 21 - 10); // 玩家附近 ±10
+        // 随机在玩家附近 ±10 tiles
+        int x = px + (rand() % 21 - 10);
         int y = py + (rand() % 21 - 10);
 
+        // 越界跳过
         if (x < 0 || x >= map_->getWidth()) continue;
         if (y < 0 || y >= map_->getHeight()) continue;
 
-        if (!map_->isWall(x, y)) {
-            return Vec2{
-                x * tileSize + tileSize * 0.5f,
-                y * tileSize + tileSize * 0.5f
-            };
+        // 当前 tile 必须是空地
+        if (map_->isWall(x, y)) continue;
+
+        // —— 安全半径检查（避免出生在靠墙位置）——
+        // enemy 半径约 10px → tileSize 64px → 检查邻居 1 tile 就足够
+        bool safe = true;
+        int marginTiles = 1;
+
+        for (int yy = y - marginTiles; yy <= y + marginTiles; yy++) {
+            for (int xx = x - marginTiles; xx <= x + marginTiles; xx++) {
+                if (xx < 0 || xx >= map_->getWidth()) continue;
+                if (yy < 0 || yy >= map_->getHeight()) continue;
+
+                if (map_->isWall(xx, yy)) {
+                    safe = false;
+                    break;
+                }
+            }
+            if (!safe) break;
+        }
+
+        if (!safe) continue;
+
+        // —— 找到安全出生点：返回 tile 中心 —
+        return Vec2{
+            x * tileSize + tileSize * 0.5f,
+            y * tileSize + tileSize * 0.5f
+        };
+    }
+}
+
+std::vector<Vec2> Game::findDistributedSpawnPoints(int count)
+{
+    int ts = map_->getTileSize();
+    int w = map_->getWidth();
+    int h = map_->getHeight();
+
+    std::vector<Vec2> candidates;
+
+    // 1. 收集所有潜在合法 tile
+    for (int y = 1; y < h - 1; y++) {
+        for (int x = 1; x < w - 1; x++) {
+
+            int tile = map_->getWallType(x, y);
+            if (tile == 1) continue; // 墙不行
+
+            // —— 周围必须安全（不靠墙）——
+            bool safe = true;
+            for (int yy = y - 1; yy <= y + 1; yy++) {
+                for (int xx = x - 1; xx <= x + 1; xx++) {
+                    if (map_->isWall(xx, yy)) {
+                        safe = false;
+                        break;
+                    }
+                }
+                if (!safe) break;
+            }
+            if (!safe) continue;
+
+            // 合格，加入候选位置（tile中心）
+            candidates.push_back(Vec2{
+                x * ts + ts * 0.5f,
+                y * ts + ts * 0.5f
+            });
         }
     }
+
+    // 2. 均匀挑选点：简单方式 → 分段抽样
+    std::vector<Vec2> result;
+    int step = candidates.size() / count;
+
+    for (int i = 0; i < candidates.size() && result.size() < count; i += step) {
+        result.push_back(candidates[i]);
+    }
+
+    return result;
 }
