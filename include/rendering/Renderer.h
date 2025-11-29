@@ -48,7 +48,6 @@ private:
     void drawWall(float screenX, float deltaX, float projectedH, const RayHit& hit);
 
     // HUD component
-    void drawHealthBar(const Player& player);
     void drawCurrentWeapon();
 };
 

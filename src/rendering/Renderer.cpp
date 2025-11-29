@@ -518,6 +518,7 @@ void Renderer::drawWeaponSprite(const Player& player) {
     // Disable texture and blending
     glDisable(GL_BLEND);
     glDisable(GL_TEXTURE_2D);
+}
 
 // Example to help you load texture
 void Renderer::drawCurrentWeapon() {
