@@ -120,8 +120,8 @@ void Game::loadTextures() {
     texManager.loadTexture(10, PISTOL_DATA);
     
     // Load weapon textures (RGBA)
-    texManager.loadTextureRGBA(200, UNFIREDGUN_DATA);
-    texManager.loadTextureRGBA(201, FIREDGUN_DATA);
+    texManager.loadTextureRGBA(300, UNFIREDGUN_DATA);
+    texManager.loadTextureRGBA(301, FIREDGUN_DATA);
     
     std::cout << "✓ All textures loaded successfully!" << std::endl;
 }

@@ -475,8 +475,8 @@ void Renderer::drawWeaponSprite(const Player& player) {
     }
     
     // Constants for weapon sprite rendering
-    constexpr int TEXTURE_ID_UNFIRED_GUN = 200;
-    constexpr int TEXTURE_ID_FIRED_GUN = 201;
+    constexpr int TEXTURE_ID_UNFIRED_GUN = 300;
+    constexpr int TEXTURE_ID_FIRED_GUN = 301;
     constexpr float WEAPON_SPRITE_HEIGHT_RATIO = 0.25f;  // 25% of screen height
     constexpr float WEAPON_SPRITE_BOTTOM_MARGIN = 20.0f;  // Distance from bottom in pixels
     
