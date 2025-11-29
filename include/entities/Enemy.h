@@ -21,7 +21,7 @@ public:
     };
 
     Enemy(const Vec2& pos, float speed, int textureId = DEFAULT_TEXTURE_ID)
-        : position_(pos), speed_(speed), textureId_(textureId) {}, health_(50), alive_(true)
+        : position_(pos), speed_(speed), textureId_(textureId), health_(50), alive_(true) {}
 
     const Vec2& getPosition() const { return position_; }
     int getHealth() const { return health_; }
