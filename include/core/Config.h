@@ -37,7 +37,9 @@ namespace RenderConfig {
 
     // Weapon rendering config
     constexpr float PISTOL_TEXTURE_SIZE = 80.0f;
-    constexpr float FIRE_ANIMATION_DURATION = 0.2f;  // 发射动画持续时间（秒）
+    constexpr float FIRE_ANIMATION_DURATION = 0.05f;  
+    constexpr float WEAPON_SPRITE_HEIGHT_RATIO = 0.25f;  
+    constexpr float WEAPON_SPRITE_BOTTOM_MARGIN = 20.0f;  
 }
 
 namespace PlayerConfig {

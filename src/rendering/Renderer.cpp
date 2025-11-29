@@ -474,11 +474,9 @@ void Renderer::drawWeaponSprite(const Player& player) {
         return;
     }
     
-    // Constants for weapon sprite rendering
-    constexpr int TEXTURE_ID_UNFIRED_GUN = 200;
-    constexpr int TEXTURE_ID_FIRED_GUN = 201;
-    constexpr float WEAPON_SPRITE_HEIGHT_RATIO = 0.25f;  // 25% of screen height
-    constexpr float WEAPON_SPRITE_BOTTOM_MARGIN = 20.0f;  // Distance from bottom in pixels
+    // defined on Game::loadTextures()
+    int TEXTURE_ID_UNFIRED_GUN = 301;
+    int TEXTURE_ID_FIRED_GUN = 302;
     
     // Select texture based on weapon state
     bool isFiring = weapon->isFiring();
@@ -491,12 +489,13 @@ void Renderer::drawWeaponSprite(const Player& player) {
     }
     
     // Weapon sprite dimensions (keep square to match 64x64 texture)
-    float spriteHeight = screenHeight_ * WEAPON_SPRITE_HEIGHT_RATIO;
+    float spriteHeight = screenHeight_ * RenderConfig::WEAPON_SPRITE_HEIGHT_RATIO;
     float spriteWidth = spriteHeight;
     
     // Position: bottom center of screen
     float spriteX = centerX_ - spriteWidth / 2.0f;
-    float spriteY = screenHeight_ - spriteHeight - WEAPON_SPRITE_BOTTOM_MARGIN;
+    float spriteY = screenHeight_ - spriteHeight -
+        RenderConfig::WEAPON_SPRITE_BOTTOM_MARGIN;
     
     glEnable(GL_TEXTURE_2D);
     glBindTexture(GL_TEXTURE_2D, texID);
@@ -518,7 +517,7 @@ void Renderer::drawWeaponSprite(const Player& player) {
 
 // Example to help you load texture
 void Renderer::drawCurrentWeapon() {
-    GLuint pistolID = textureManager_.getTextureID(10);  //ID define on Game.cpp
+    GLuint pistolID = textureManager_.getTextureID(300);  //ID define on Game.cpp
     float pistol_width = RenderConfig::PISTOL_TEXTURE_SIZE;
     float pistol_height = pistol_width;
 

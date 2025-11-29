@@ -249,7 +249,7 @@ void Enemy::onFedCorrect()
     stateFramesRemaining_ = 30;
 }
 
-void Enemy::takeDamage(int damage) {
+void Enemy::takeDamageEnemy(int damage) {
     if (!alive_) return;
     
     health_ -= damage;

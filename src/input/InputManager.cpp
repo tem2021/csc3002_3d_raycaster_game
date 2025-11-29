@@ -64,7 +64,7 @@ float InputManager::consumeMouseDelta() {
     return delta;
 }
 
-void InputManager::handleMouseButton(int button, int state, int x, int y) {
+void InputManager::handleMouseButton(int button, int state, int , int ) {
     if (button == GLUT_LEFT_BUTTON) {
         if (state == GLUT_DOWN) {
             firePressed_ = true;

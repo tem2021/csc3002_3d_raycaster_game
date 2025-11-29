@@ -140,7 +140,7 @@ int getClosestEnemyIndex(const std::vector<Enemy>& enemies, const Player& player
     float bestDist = 1e9;
     int bestIndex = -1;
 
-    for (int i = 0; i < enemies.size(); i++) {
+    for (unsigned int i = 0; i < enemies.size(); i++) {
         float dx = enemies[i].getPosition().x - playerPos.x;
         float dy = enemies[i].getPosition().y - playerPos.y;
         float dist = std::sqrt(dx*dx + dy*dy);
@@ -203,13 +203,14 @@ void Game::update() {
     for (auto& e : enemies_) {
         if (e.isAlive()) {
             e.update(playerPos, *map_);
+        }
     }
 
     float minDist = 8.0f;
     float pushStrength = 0.2f;
 
-    for (int i = 0; i < enemies_.size(); i++) {
-        for (int j = i + 1; j < enemies_.size(); j++) {
+    for (unsigned int i = 0; i < enemies_.size(); i++) {
+        for (unsigned int j = i + 1; j < enemies_.size(); j++) {
 
             Vec2 p1 = enemies_[i].getPosition();
             Vec2 p2 = enemies_[j].getPosition();
@@ -251,7 +252,7 @@ void Game::update() {
             // 如果冷却结束，可以攻击
             if (e.attackCooldownFrames_ <= 0) {
 
-                player_->takeDamage(5);   // 扣血 5 点
+                player_->takeDamagePlayer(5);   // 扣血 5 点
 
                 std::cout << "[HIT] Player took 5 damage! HP = "
                           << player_->getHealth() << "\n";
@@ -262,8 +263,7 @@ void Game::update() {
         }
 
         // 冷却计时递减
-        if (e.attackCooldownFrames_ > 0)
-            e.attackCooldownFrames_--;
+        if (e.attackCooldownFrames_ > 0) e.attackCooldownFrames_--;
     }
 }
 
@@ -357,7 +357,7 @@ void Game::handleWeaponFire() {
     
     // Apply damage to the hit enemy
     if (hitEnemy) {
-        hitEnemy->takeDamage(weaponDamage);
+        hitEnemy->takeDamageEnemy(weaponDamage);
     }
 }
 
@@ -444,7 +444,7 @@ Vec2 Game::findFreeSpawnPoint() {
     }
 }
 
-std::vector<Vec2> Game::findDistributedSpawnPoints(int count)
+std::vector<Vec2> Game::findDistributedSpawnPoints(unsigned int count)
 {
     int ts = map_->getTileSize();
     int w = map_->getWidth();
@@ -484,7 +484,7 @@ std::vector<Vec2> Game::findDistributedSpawnPoints(int count)
     std::vector<Vec2> result;
     int step = candidates.size() / count;
 
-    for (int i = 0; i < candidates.size() && result.size() < count; i += step) {
+    for (unsigned int i = 0; i < candidates.size() && result.size() < count; i += step) {
         result.push_back(candidates[i]);
     }
 
