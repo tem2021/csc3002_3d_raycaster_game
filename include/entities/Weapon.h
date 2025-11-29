@@ -2,6 +2,7 @@
 #define WEAPON_H
 
 #include "core/Types.h"
+#include "core/Config.h"
 #include "world/Raycaster.h"
 
 // 武器类 - 最小实现，仅用于编译通过
@@ -13,9 +14,21 @@ public:
     int getDamage() const { return 0; }
     float getRange() const { return 0.0f; }
     
-    bool fire();
+    bool fire() {
+        isFiring_ = true;
+        fireAnimationTime_ = 0.0f;
+        return true;
+    }
     void reload() {}
-    void update(float deltaTime);
+    void update(float deltaTime) {
+        if (isFiring_) {
+            fireAnimationTime_ += deltaTime;
+            if (fireAnimationTime_ >= RenderConfig::FIRE_ANIMATION_DURATION) {
+                isFiring_ = false;
+                fireAnimationTime_ = 0.0f;
+            }
+        }
+    }
     
     // 武器动画状态
     bool isFiring() const { return isFiring_; }
