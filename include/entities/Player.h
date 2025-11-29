@@ -22,6 +22,7 @@ public:
     float getMoveSpeed() const { return moveSpeed_; }
     
     int getHealth() const { return health_; }
+    void takeDamage(int amount) { health_ -= amount; if (health_ < 0) health_ = 0; }
     
 private:
     Vec2 position_;

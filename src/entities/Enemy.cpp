@@ -2,6 +2,10 @@
 #include "core/Config.h"
 #include <cmath>
 
+// 每种情绪持续的帧数（按 60fps 算，大约 0.5 秒）
+constexpr int ANGRY_DURATION_FRAMES = GameConfig::TARGET_FPS / 2; // 30 帧
+constexpr int HAPPY_DURATION_FRAMES = GameConfig::TARGET_FPS / 2; // 30 帧
+
 // ----------------------------------------------------------
 // 连续空间 + 蛇形 + 8方向导航 + 强化滑墙
 // ----------------------------------------------------------
@@ -10,7 +14,58 @@ void Enemy::update(const Vec2& playerPos, const Map& map)
 {
     float dx = playerPos.x - position_.x;
     float dy = playerPos.y - position_.y;
-    float dist = std::sqrt(dx*dx + dy*dy);
+    float distToPlayer = std::sqrt(dx * dx + dy * dy);
+
+    int ts = map.getTileSize();  // tileSize 例如 11~12 像素
+
+    // 愤怒/恢复距离（基于 tile）
+    const float agroDistance    = ts * 2.0f;   // 靠近 12 格
+    const float deAgroDistance  = ts * 2.0f;   // 离开 16 格才恢复
+
+
+    // 手动覆盖优先级（按键 1/2 触发）
+    if (manualOverride_) {
+        manualOverrideFrames_--;
+        if (manualOverrideFrames_ <= 0) {
+            manualOverride_ = false;
+        }
+    }
+
+
+    // 自动愤怒 / 自动恢复（只有非手动状态时执行）
+    // 且 Happy 不会被自动AI覆盖
+
+    if (!manualOverride_ && state_ != EmotionState::Happy)
+    {
+        // ---- 自动进入愤怒 ----
+        if (!isAggro_ && distToPlayer < agroDistance) {
+            isAggro_ = true;
+            state_ = EmotionState::Angry;
+            textureId_ = ANGRY_TEXTURE_ID;
+        }
+
+        // ---- 自动恢复普通 ----
+        if (isAggro_ && distToPlayer > deAgroDistance) {
+            isAggro_ = false;
+            state_ = EmotionState::Normal;
+            textureId_ = NORMAL_TEXTURE_ID;
+        }
+    }
+
+    // 情绪计时（用于 Happy / 手动 Angry）
+    if (!isAggro_ && state_ != EmotionState::Normal)
+    {
+        if (stateFramesRemaining_ > 0) {
+            stateFramesRemaining_--;
+        }
+
+        if (stateFramesRemaining_ <= 0) {
+            state_ = EmotionState::Normal;
+            textureId_ = NORMAL_TEXTURE_ID;
+        }
+    }
+
+    float dist = distToPlayer;
 
     if (dist < 0.01f) return;
     // --- A. 在玩家面前一个合理距离停下来 ---
@@ -32,7 +87,7 @@ void Enemy::update(const Vec2& playerPos, const Map& map)
     Vec2 perp = { -forward.y, forward.x };
 
     // -------------------------
-    // 2. 蛇形（保持你原来的效果）
+    // 2. 蛇形（保持原来的效果）
     // -------------------------
     timeOffset_ += (dist < 5.0f ? 0.05f : 0.02f);
     float snake = std::sin(timeOffset_ * 2.5f);
@@ -41,7 +96,6 @@ void Enemy::update(const Vec2& playerPos, const Map& map)
     // -------------------------
     // 3. tile-level 转弯辅助（加强版）
     // -------------------------
-    int ts = map.getTileSize();
     int ex = (int)(position_.x / ts);
     int ey = (int)(position_.y / ts);
     int px = (int)(playerPos.x / ts);
@@ -140,7 +194,7 @@ void Enemy::update(const Vec2& playerPos, const Map& map)
     }
 
     // -------------------------
-    // 7. 强化版滑墙逻辑
+    // 7. 强化滑墙逻辑
     // -------------------------
     // 尝试沿 X 滑动
     Vec2 tryX = { newPos.x, position_.y };
@@ -171,5 +225,35 @@ void Enemy::update(const Vec2& playerPos, const Map& map)
             return;
         }
     }
+}
+
+void Enemy::onFedWrong()
+{
+    // 手动覆盖自动 AI
+    manualOverride_ = true;
+    manualOverrideFrames_ = 30;
+
+    state_ = EmotionState::Angry;
+    textureId_ = ANGRY_TEXTURE_ID;
+    stateFramesRemaining_ = 30;  // 原来保持 0.5 秒
+}
+
+void Enemy::onFedCorrect()
+{
+    // 手动覆盖自动 AI
+    manualOverride_ = true;
+    manualOverrideFrames_ = 30;
+
+    state_ = EmotionState::Happy;
+    textureId_ = HAPPY_TEXTURE_ID;
+    stateFramesRemaining_ = 30;
+}
+
+
+void Enemy::resetEmotion()
+{
+    state_ = EmotionState::Normal;
+    stateFramesRemaining_ = 0;
+    textureId_ = NORMAL_TEXTURE_ID;
 }
 
