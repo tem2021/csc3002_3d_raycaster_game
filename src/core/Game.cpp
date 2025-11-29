@@ -16,6 +16,8 @@
 #include "data/textures/Hajimi.h"
 #include "data/textures/pistol.h"
 #include "data/textures/Hippo_1.h"
+#include "data/textures/Hippo_2.h"
+#include "data/textures/Hippo_3.h"
 
 #include "rendering/TextureManager.h"
 
@@ -106,7 +108,9 @@ void Game::loadTextures() {
     texManager.loadTexture(101, HAJIMI_DATA);
 
     // Enemy Texture
-    texManager.loadTexture(200, HIPPO_1_DATA);
+    texManager.loadTexture(200, HIPPO_1_DATA);  // 普通
+    texManager.loadTexture(201, HIPPO_2_DATA);  // 愤怒
+    texManager.loadTexture(202, HIPPO_3_DATA);  // 乖巧
 
     //Weapon Texture
     texManager.loadTexture(10, PISTOL_DATA);
@@ -116,6 +120,30 @@ void Game::loadTextures() {
 
 void Game::handleInput() {
     processPlayerInput();
+}
+
+// =====================
+// helper: 找最近的敌人
+// =====================
+int getClosestEnemyIndex(const std::vector<Enemy>& enemies, const Player& player)
+{
+    if (enemies.empty()) return -1;
+
+    Vec2 playerPos = player.getPosition();
+    float bestDist = 1e9;
+    int bestIndex = -1;
+
+    for (int i = 0; i < enemies.size(); i++) {
+        float dx = enemies[i].getPosition().x - playerPos.x;
+        float dy = enemies[i].getPosition().y - playerPos.y;
+        float dist = std::sqrt(dx*dx + dy*dy);
+
+        if (dist < bestDist) {
+            bestDist = dist;
+            bestIndex = i;
+        }
+    }
+    return bestIndex;
 }
 
 void Game::processPlayerInput() {
@@ -140,6 +168,20 @@ void Game::processPlayerInput() {
     float mouseDelta = inputManager_->consumeMouseDelta();
     if (mouseDelta != 0.0f) {
         player_->rotate(mouseDelta * GameConfig::ROTATION_SPEED);
+    }
+
+    int idx = getClosestEnemyIndex(enemies_, *player_);
+
+    if (idx != -1) {
+        if (inputManager_->isKeyPressed('1')) {
+            enemies_[idx].onFedWrong();
+            std::cout << "[DEBUG] Angry enemy index = " << idx << "\n";
+        }
+        
+        if (inputManager_->isKeyPressed('2')) {
+            enemies_[idx].onFedCorrect();
+            std::cout << "[DEBUG] Happy enemy index = " << idx << "\n";
+        }
     }
 }
 
@@ -176,6 +218,39 @@ void Game::update() {
                                         uy * overlap * pushStrength});
             }
         }
+    }
+    // ============================================
+    // 3. 敌人攻击玩家（贴脸距离 + 3 秒冷却）
+    // ============================================
+    for (auto& e : enemies_) {
+
+        // 敌人与玩家的距离
+        float dx = e.getPosition().x - player_->getPosition().x;
+        float dy = e.getPosition().y - player_->getPosition().y;
+        float dist = std::sqrt(dx*dx + dy*dy);
+
+        // 贴脸攻击距离，可调整（15 像素）
+        const float attackRange = 15.0f;
+
+        // 判断贴脸
+        if (dist < attackRange) {
+
+            // 如果冷却结束，可以攻击
+            if (e.attackCooldownFrames_ <= 0) {
+
+                player_->takeDamage(5);   // 扣血 5 点
+
+                std::cout << "[HIT] Player took 5 damage! HP = "
+                          << player_->getHealth() << "\n";
+
+                // 设置冷却：3 秒（FPS * 3）
+                e.attackCooldownFrames_ = GameConfig::TARGET_FPS * 3;
+            }
+        }
+
+        // 冷却计时递减
+        if (e.attackCooldownFrames_ > 0)
+            e.attackCooldownFrames_--;
     }
 }
 
