@@ -17,7 +17,7 @@ python3 texture_editor.py  # Texture editor (create wall textures)
 
 ## Texture Editor
 
-Create 64×64 pixel art textures for walls.
+Create 64×64 pixel art textures
 
 ### Drawing Tools
 - **Point** (`P`): Draw individual pixels
@@ -29,8 +29,8 @@ Create 64×64 pixel art textures for walls.
 
 ### Color Selection (Right Panel)
 - **Color Palette**: 192 pre-defined colors in gradient rows
-- **RGB Sliders**: Drag to adjust R/G/B channels (0-255)
-- **RGB Input**: Click numbers to type exact values
+- **RGBA Sliders**: Drag to adjust R/G/B channels (0-255)
+- **RGBA Input**: Click numbers to type exact values
 - **Eyedropper** (`I` or `Ctrl+K`): Pick colors from canvas
 
 ### Keyboard Shortcuts
@@ -42,6 +42,7 @@ Create 64×64 pixel art textures for walls.
 - `Ctrl+Y` or `Ctrl+R`: Redo
 - `H`: Show help
 - `Q`: Quit
+- `B`: Toggle the background color
 
 ### Workflow
 1. **New texture**: `Ctrl+N` → Enter name → Draw → `Ctrl+E` to export

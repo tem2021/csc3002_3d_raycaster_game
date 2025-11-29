@@ -38,6 +38,8 @@ public:
     bool fireWeapon();
     void reloadWeapon();
     
+    void takeDamagePlayer(int amount) { health_ -= amount; if (health_ < 0) health_ = 0; }
+
 private:
     Vec2 position_;
     Vec2 direction_;

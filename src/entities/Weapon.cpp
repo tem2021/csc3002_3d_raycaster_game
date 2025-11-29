@@ -1,4 +1,5 @@
 #include "entities/Weapon.h"
+#include "core/Config.h"
 
 bool Weapon::fire() {
     // Start fire animation
@@ -11,7 +12,7 @@ void Weapon::update(float deltaTime) {
     // Update fire animation
     if (isFiring_) {
         fireAnimationTime_ += deltaTime;
-        if (fireAnimationTime_ >= FIRE_ANIMATION_DURATION) {
+        if (fireAnimationTime_ >= RenderConfig::FIRE_ANIMATION_DURATION) {
             isFiring_ = false;
             fireAnimationTime_ = 0.0f;
         }

@@ -23,7 +23,6 @@ public:
 private:
     bool isFiring_;              // 是否正在发射
     float fireAnimationTime_;    // 发射动画计时器
-    static constexpr float FIRE_ANIMATION_DURATION = 0.2f;  // 发射动画持续时间（秒）
 };
 
 // 武器命中检测类

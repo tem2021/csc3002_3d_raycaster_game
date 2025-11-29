@@ -34,6 +34,10 @@ namespace RenderConfig {
     constexpr float FOV_HEIGHT =  53.13010235415598f;
     constexpr float CROSSHAIR_SIZE = 0.01f;
     constexpr float MIN_WALL_DISTANCE = 0.1f;  // Minimum distance to prevent texture distortion
+
+    // Weapon rendering config
+    constexpr float PISTOL_TEXTURE_SIZE = 80.0f;
+    constexpr float FIRE_ANIMATION_DURATION = 0.2f;  // 发射动画持续时间（秒）
 }
 
 namespace PlayerConfig {

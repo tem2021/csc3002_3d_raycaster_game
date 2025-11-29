@@ -18,7 +18,7 @@
 #include <memory>
 #include <cstdlib>
 
-// Unique Global Game Instance
+// Unique Global Game declaration;
 std::unique_ptr<Game> g_game;
 
 // GLUT Callback Function
@@ -64,7 +64,7 @@ void mouseButtonCallback(int button, int state, int x, int y) {
 int main(int argc, char* argv[]) {
     // Initialize GLUT
     glutInit(&argc, argv);
-    glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
+    glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA | GLUT_DEPTH);
     
     // Create the Game
     g_game = std::make_unique<Game>();

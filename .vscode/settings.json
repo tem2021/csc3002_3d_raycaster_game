@@ -4,7 +4,8 @@
 		"freeglut_std.h": "c",
 		"freeglut.h": "c",
 		"math.h": "c",
-		"ios": "cpp"
+		"ios": "cpp",
+		"cmath": "cpp"
 	},
 	"C_Cpp.default.compileCommands": "${workspaceFolder}/build/compile_commands.json"
 }
