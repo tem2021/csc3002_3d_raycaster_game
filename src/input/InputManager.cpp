@@ -4,7 +4,8 @@
 
 InputManager::InputManager(int centerX, int centerY) 
     : mouseDeltaX_(0.0f), centerX_(centerX), centerY_(centerY), 
-      showInfo_(false), exitRequested_(false), sprintPressed_(false) {
+      showInfo_(false), exitRequested_(false), sprintPressed_(false),
+      firePressed_(false), reloadPressed_(false) {
     keyStates_.fill(false);
 }
 
@@ -28,6 +29,9 @@ void InputManager::handleKeyUp(unsigned char key) {
     
     if (key == 'i') {
         showInfo_ = !showInfo_;
+    }
+    if (key == 'r') {
+        reloadPressed_ = true;
     }
 }
 
@@ -58,4 +62,20 @@ float InputManager::consumeMouseDelta() {
     float delta = mouseDeltaX_;
     mouseDeltaX_ = 0.0f;
     return delta;
+}
+
+void InputManager::handleMouseButton(int button, int state, int , int ) {
+    if (button == GLUT_LEFT_BUTTON) {
+        if (state == GLUT_DOWN) {
+            firePressed_ = true;
+        } else {
+            firePressed_ = false;
+        }
+    }
+}
+
+bool InputManager::consumeReloadPress() {
+    bool pressed = reloadPressed_;
+    reloadPressed_ = false;
+    return pressed;
 }

@@ -24,6 +24,10 @@ mouse: vision control
 
 wasd: player movement
 
+left mouse button: fire weapon
+
+r: reload weapon
+
 i: toggle debug info
 
 ## Credits

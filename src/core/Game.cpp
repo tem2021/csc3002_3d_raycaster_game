@@ -1,6 +1,8 @@
 #include "core/Game.h"
 #include "core/Config.h"
+#include "entities/Weapon.h"
 #include "data/maps/level1.h"
+#include <cmath>
 
 // Include texture data (only those with 3D array format)
 #include "data/textures/brick.h"
@@ -18,6 +20,8 @@
 #include "data/textures/Hippo_1.h"
 #include "data/textures/Hippo_2.h"
 #include "data/textures/Hippo_3.h"
+#include "data/textures/unfiredgun.h"
+#include "data/textures/firedgun.h"
 
 #include "rendering/TextureManager.h"
 
@@ -32,7 +36,7 @@
     #include <GL/freeglut.h>
 #endif
 
-Game::Game() : screenWidth_(0), screenHeight_(0) {}
+Game::Game() : screenWidth_(0), screenHeight_(0), deltaTime_(0.0166667f) {}
 
 void Game::init() {
     // gain the size of the screen
@@ -113,13 +117,16 @@ void Game::loadTextures() {
     texManager.loadTexture(202, HIPPO_3_DATA);  // 乖巧
 
     //Weapon Texture
-    texManager.loadTexture(10, PISTOL_DATA);
-    
+    texManager.loadTexture(300, PISTOL_DATA);
+    texManager.loadTexture(301, UNFIREDGUN_DATA);
+    texManager.loadTexture(302, FIREDGUN_DATA);
+
     std::cout << "✓ All textures loaded successfully!" << std::endl;
 }
 
 void Game::handleInput() {
     processPlayerInput();
+    processWeaponInput();
 }
 
 // =====================
@@ -133,7 +140,7 @@ int getClosestEnemyIndex(const std::vector<Enemy>& enemies, const Player& player
     float bestDist = 1e9;
     int bestIndex = -1;
 
-    for (int i = 0; i < enemies.size(); i++) {
+    for (unsigned int i = 0; i < enemies.size(); i++) {
         float dx = enemies[i].getPosition().x - playerPos.x;
         float dy = enemies[i].getPosition().y - playerPos.y;
         float dist = std::sqrt(dx*dx + dy*dy);
@@ -186,17 +193,24 @@ void Game::processPlayerInput() {
 }
 
 void Game::update() {
+    // Update weapon cooldown
+    if (player_->getWeapon()) {
+        player_->getWeapon()->update(deltaTime_);
+    }
+    
     Vec2 playerPos = player_->getPosition();
 
     for (auto& e : enemies_) {
-        e.update(playerPos, *map_);
+        if (e.isAlive()) {
+            e.update(playerPos, *map_);
+        }
     }
 
     float minDist = 8.0f;
     float pushStrength = 0.2f;
 
-    for (int i = 0; i < enemies_.size(); i++) {
-        for (int j = i + 1; j < enemies_.size(); j++) {
+    for (unsigned int i = 0; i < enemies_.size(); i++) {
+        for (unsigned int j = i + 1; j < enemies_.size(); j++) {
 
             Vec2 p1 = enemies_[i].getPosition();
             Vec2 p2 = enemies_[j].getPosition();
@@ -238,7 +252,7 @@ void Game::update() {
             // 如果冷却结束，可以攻击
             if (e.attackCooldownFrames_ <= 0) {
 
-                player_->takeDamage(5);   // 扣血 5 点
+                player_->takeDamagePlayer(5);   // 扣血 5 点
 
                 std::cout << "[HIT] Player took 5 damage! HP = "
                           << player_->getHealth() << "\n";
@@ -249,12 +263,103 @@ void Game::update() {
         }
 
         // 冷却计时递减
-        if (e.attackCooldownFrames_ > 0)
-            e.attackCooldownFrames_--;
+        if (e.attackCooldownFrames_ > 0) e.attackCooldownFrames_--;
     }
 }
 
+void Game::processWeaponInput() {
+    // Handle weapon firing
+    if (inputManager_->isFirePressed()) {
+        handleWeaponFire();
+    }
+    
+    // Handle reload (consume the reload key press)
+    if (inputManager_->consumeReloadPress()) {
+        player_->reloadWeapon();
+    }
+}
 
+void Game::handleWeaponFire() {
+    if (!player_->fireWeapon()) {
+        return;  // Weapon couldn't fire (no ammo or cooldown)
+    }
+    
+    // Get player info
+    Vec2 playerPos = player_->getPosition();
+    float playerAngle = player_->getAngle();
+    
+    // Get weapon stats
+    const Weapon* weapon = player_->getWeapon();
+    if (!weapon) return;
+    
+    float weaponRange = weapon->getRange();
+    int weaponDamage = weapon->getDamage();
+    
+    // Cast a ray from the player's position in the direction they're facing
+    // This uses the same raycasting logic as the renderer
+    RayHit wallHit = raycaster_->castRay(playerPos, playerAngle);
+    
+    // Determine the maximum distance to check for enemies
+    // Either the weapon range or the distance to the wall, whichever is closer
+    float maxCheckDistance = weaponRange;
+    if (wallHit.hit && wallHit.distance < weaponRange) {
+        maxCheckDistance = wallHit.distance;
+    }
+    
+    // Now check which enemy (if any) is hit by this ray
+    Enemy* hitEnemy = nullptr;
+    float closestEnemyDist = maxCheckDistance;
+    
+    // Check each enemy to see if the ray intersects with it
+    for (auto& enemy : enemies_) {
+        if (!enemy.isAlive()) continue;
+        
+        Vec2 enemyPos = enemy.getPosition();
+        
+        // Calculate the distance from player to enemy
+        Vec2 toEnemy = enemyPos - playerPos;
+        float distToEnemy = toEnemy.length();
+        
+        // Skip if enemy is farther than our max check distance
+        if (distToEnemy > closestEnemyDist) continue;
+        
+        // Calculate the perpendicular distance from enemy to the ray
+        // The ray goes in direction (cos(playerAngle), sin(playerAngle))
+        Vec2 rayDir = Vec2{std::cos(playerAngle), std::sin(playerAngle)};
+        
+        // Project toEnemy onto the ray direction
+        float projectionLength = toEnemy.x * rayDir.x + toEnemy.y * rayDir.y;
+        
+        // Skip if enemy is behind the player
+        if (projectionLength < 0) continue;
+        
+        // Calculate the perpendicular distance
+        Vec2 projectedPoint = rayDir * projectionLength;
+        Vec2 perpVector = toEnemy - projectedPoint;
+        float perpDistance = perpVector.length();
+        
+        // Define enemy hitbox radius (half of tile size is reasonable)
+        float enemyRadius = map_->getTileSize() * 0.3f;
+        
+        // Check if the ray intersects the enemy's hitbox
+        if (perpDistance < enemyRadius) {
+            // Calculate actual hit distance along the ray
+            float actualHitDistance = projectionLength - std::sqrt(enemyRadius * enemyRadius - perpDistance * perpDistance);
+            if (actualHitDistance < 0) actualHitDistance = 0;
+            
+            // This enemy is hit! Check if it's the closest one
+            if (actualHitDistance < closestEnemyDist) {
+                hitEnemy = &enemy;
+                closestEnemyDist = actualHitDistance;
+            }
+        }
+    }
+    
+    // Apply damage to the hit enemy
+    if (hitEnemy) {
+        hitEnemy->takeDamageEnemy(weaponDamage);
+    }
+}
 
 
 void Game::render() {
@@ -276,6 +381,9 @@ void Game::render() {
     // render crosshair
     renderer_->drawCrosshair();
     
+    // render weapon sprite
+    renderer_->drawWeaponSprite(*player_);
+    
     // render debug information
     renderer_->drawDebugInfo(*player_, inputManager_->shouldShowInfo());
 
@@ -287,8 +395,6 @@ void Game::render() {
 
 bool Game::shouldExit() const {
     return inputManager_->shouldExit();
-
-
 }
 
 Vec2 Game::findFreeSpawnPoint() {
@@ -338,7 +444,7 @@ Vec2 Game::findFreeSpawnPoint() {
     }
 }
 
-std::vector<Vec2> Game::findDistributedSpawnPoints(int count)
+std::vector<Vec2> Game::findDistributedSpawnPoints(unsigned int count)
 {
     int ts = map_->getTileSize();
     int w = map_->getWidth();
@@ -378,7 +484,7 @@ std::vector<Vec2> Game::findDistributedSpawnPoints(int count)
     std::vector<Vec2> result;
     int step = candidates.size() / count;
 
-    for (int i = 0; i < candidates.size() && result.size() < count; i += step) {
+    for (unsigned int i = 0; i < candidates.size() && result.size() < count; i += step) {
         result.push_back(candidates[i]);
     }
 

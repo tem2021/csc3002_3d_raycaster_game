@@ -21,13 +21,16 @@ public:
     };
 
     Enemy(const Vec2& pos, float speed, int textureId = DEFAULT_TEXTURE_ID)
-        : position_(pos), speed_(speed), textureId_(textureId) {}
+        : position_(pos), health_(50), alive_(true), speed_(speed),
+        textureId_(textureId){}
 
     const Vec2& getPosition() const { return position_; }
-
+    int getHealth() const { return health_; }
+    bool isAlive() const { return alive_; }
     int getTextureId() const { return textureId_; }
 
     void update(const Vec2& playerPos, const Map& map);
+    void takeDamageEnemy(int damage);
 
     // ---- 新增：允许 Game.cpp 进行修正 ----
     void setPosition(const Vec2& p) { position_ = p; }
@@ -42,11 +45,12 @@ public:
     void resetEmotion();  // 可选：强制恢复普通形态
 
     EmotionState getEmotionState() const { return state_; }
-    // === 新增：攻击冷却 ===
     int attackCooldownFrames_ = 0;
 
 private:
     Vec2 position_;
+    int health_;
+    bool alive_;
     float speed_;
     float timeOffset_ = (rand() % 1000) * 0.01f;
     float radius_ = 10.0f;
@@ -60,4 +64,4 @@ private:
     EmotionState state_ = EmotionState::Normal;
     int stateFramesRemaining_ = 0;   // 剩余帧数
 };
-#endif // ENEMY_H
+#endif

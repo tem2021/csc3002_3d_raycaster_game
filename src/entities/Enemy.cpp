@@ -249,6 +249,15 @@ void Enemy::onFedCorrect()
     stateFramesRemaining_ = 30;
 }
 
+void Enemy::takeDamageEnemy(int damage) {
+    if (!alive_) return;
+    
+    health_ -= damage;
+    if (health_ <= 0) {
+        health_ = 0;
+        alive_ = false;
+    }
+}
 
 void Enemy::resetEmotion()
 {

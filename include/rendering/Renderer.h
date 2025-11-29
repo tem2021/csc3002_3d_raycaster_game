@@ -23,6 +23,7 @@ public:
     void drawCrosshair();
     void drawHUD(const Player& player);
     void drawDebugInfo(const Player& player, bool show);
+    void drawWeaponSprite(const Player& player);
     void present();
     
     TextureManager& getTextureManager() { return textureManager_; }

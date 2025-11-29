@@ -34,11 +34,14 @@ private:
     std::unique_ptr<Renderer> renderer_;
     std::unique_ptr<InputManager> inputManager_;
     std::vector<Enemy> enemies_;
-    std::vector<Vec2> findDistributedSpawnPoints(int count);
+    std::vector<Vec2> findDistributedSpawnPoints(unsigned int count);
     int screenWidth_;
     int screenHeight_;
+    float deltaTime_;  // Time since last frame
     
     void processPlayerInput();
+    void processWeaponInput();
+    void handleWeaponFire();
     Vec2 findFreeSpawnPoint();
 };
 

@@ -1,6 +1,7 @@
 #include "rendering/Renderer.h"
 #include "core/Config.h"
 #include "core/Types.h"
+#include "entities/Weapon.h"
 #include "entities/Player.h"
 #ifdef _WIN32
     #include <GL/freeglut.h>
@@ -462,10 +463,61 @@ void Renderer::drawEnemies3D(const std::vector<Enemy>& enemies,
     }
 }
 
+void Renderer::drawWeaponSprite(const Player& player) {
+    // Only draw when weapon is equipped
+    if (!player.hasWeapon()) {
+        return;
+    }
+    
+    const Weapon* weapon = player.getWeapon();
+    if (!weapon) {
+        return;
+    }
+    
+    // defined on Game::loadTextures()
+    int TEXTURE_ID_UNFIRED_GUN = 301;
+    int TEXTURE_ID_FIRED_GUN = 302;
+    
+    // Select texture based on weapon state
+    bool isFiring = weapon->isFiring();
+    int textureId = isFiring ? TEXTURE_ID_FIRED_GUN : TEXTURE_ID_UNFIRED_GUN;
+    
+    // Get OpenGL texture ID
+    GLuint texID = textureManager_.getTextureID(textureId);
+    if (texID == 0) {
+        return;  // Texture not loaded
+    }
+    
+    // Weapon sprite dimensions (keep square to match 64x64 texture)
+    float spriteHeight = screenHeight_ * RenderConfig::WEAPON_SPRITE_HEIGHT_RATIO;
+    float spriteWidth = spriteHeight;
+    
+    // Position: bottom center of screen
+    float spriteX = centerX_ - spriteWidth / 2.0f;
+    float spriteY = screenHeight_ - spriteHeight -
+        RenderConfig::WEAPON_SPRITE_BOTTOM_MARGIN;
+    
+    glEnable(GL_TEXTURE_2D);
+    glBindTexture(GL_TEXTURE_2D, texID);
+    glColor4f(1.0f, 1.0f, 1.0f, 1.0f);  
+    
+    // Draw textured quad
+    glBegin(GL_QUADS);
+        glTexCoord2f(0.0f, 0.0f); glVertex2f(spriteX, spriteY);
+        glTexCoord2f(1.0f, 0.0f); glVertex2f(spriteX + spriteWidth, spriteY);
+        glTexCoord2f(1.0f, 1.0f); glVertex2f(spriteX + spriteWidth, spriteY + spriteHeight);
+        glTexCoord2f(0.0f, 1.0f); glVertex2f(spriteX, spriteY + spriteHeight);
+    glEnd();
+    
+    // Disable texture and blending
+    glDisable(GL_TEXTURE_2D);
+    glColor3f(1.0f, 1.0f, 1.0f);
+}
+
 
 // Example to help you load texture
 void Renderer::drawCurrentWeapon() {
-    GLuint pistolID = textureManager_.getTextureID(10);  //ID define on Game.cpp
+    GLuint pistolID = textureManager_.getTextureID(300);  //ID define on Game.cpp
     float pistol_width = RenderConfig::PISTOL_TEXTURE_SIZE;
     float pistol_height = pistol_width;
 
