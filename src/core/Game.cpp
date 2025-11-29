@@ -18,6 +18,10 @@
 #include "data/textures/Hajimi.h"
 #include "data/textures/unfiredgun.h"
 #include "data/textures/firedgun.h"
+#include "data/textures/pistol.h"
+#include "data/textures/Hippo_1.h"
+#include "data/textures/Hippo_2.h"
+#include "data/textures/Hippo_3.h"
 
 #include "rendering/TextureManager.h"
 
@@ -71,13 +75,16 @@ void Game::init() {
         screenWidth_ / 2,
         screenHeight_ / 2
     );
-    // --- init enemies --- generate 10 enemies at free positions
+    // --- init enemies ---
     enemies_.clear();
-    for (int i = 0; i < 10; ++i) {
-    enemies_.push_back(Enemy(findFreeSpawnPoint(), 0.3f));
 
+    // 新的全地图均匀生成（例如 20 个）
+    int enemyCount = 40;
+    auto spawnPoints = findDistributedSpawnPoints(enemyCount);
+
+    for (auto& pos : spawnPoints) {
+        enemies_.push_back(Enemy(pos, 0.3f));
 }
-
 
     
     // Load all textures
@@ -91,6 +98,7 @@ void Game::loadTextures() {
     TextureManager& texManager = renderer_->getTextureManager();
     
     // Load textures with their IDs (matching map data)
+    // Wall Texture
     texManager.loadTexture(1, BRICK_DATA);
     texManager.loadTexture(2, WOOD_DATA);
     texManager.loadTexture(3, METAL_DATA);
@@ -102,6 +110,14 @@ void Game::loadTextures() {
     texManager.loadTexture(9, CONCRETE_DATA);
     texManager.loadTexture(100, CUHK_SZ_DATA);
     texManager.loadTexture(101, HAJIMI_DATA);
+
+    // Enemy Texture
+    texManager.loadTexture(200, HIPPO_1_DATA);  // 普通
+    texManager.loadTexture(201, HIPPO_2_DATA);  // 愤怒
+    texManager.loadTexture(202, HIPPO_3_DATA);  // 乖巧
+
+    //Weapon Texture
+    texManager.loadTexture(10, PISTOL_DATA);
     
     // Load weapon textures (RGBA)
     texManager.loadTextureRGBA(200, UNFIREDGUN_DATA);
@@ -113,6 +129,30 @@ void Game::loadTextures() {
 void Game::handleInput() {
     processPlayerInput();
     processWeaponInput();
+}
+
+// =====================
+// helper: 找最近的敌人
+// =====================
+int getClosestEnemyIndex(const std::vector<Enemy>& enemies, const Player& player)
+{
+    if (enemies.empty()) return -1;
+
+    Vec2 playerPos = player.getPosition();
+    float bestDist = 1e9;
+    int bestIndex = -1;
+
+    for (int i = 0; i < enemies.size(); i++) {
+        float dx = enemies[i].getPosition().x - playerPos.x;
+        float dy = enemies[i].getPosition().y - playerPos.y;
+        float dist = std::sqrt(dx*dx + dy*dy);
+
+        if (dist < bestDist) {
+            bestDist = dist;
+            bestIndex = i;
+        }
+    }
+    return bestIndex;
 }
 
 void Game::processPlayerInput() {
@@ -137,6 +177,20 @@ void Game::processPlayerInput() {
     float mouseDelta = inputManager_->consumeMouseDelta();
     if (mouseDelta != 0.0f) {
         player_->rotate(mouseDelta * GameConfig::ROTATION_SPEED);
+    }
+
+    int idx = getClosestEnemyIndex(enemies_, *player_);
+
+    if (idx != -1) {
+        if (inputManager_->isKeyPressed('1')) {
+            enemies_[idx].onFedWrong();
+            std::cout << "[DEBUG] Angry enemy index = " << idx << "\n";
+        }
+        
+        if (inputManager_->isKeyPressed('2')) {
+            enemies_[idx].onFedCorrect();
+            std::cout << "[DEBUG] Happy enemy index = " << idx << "\n";
+        }
     }
 }
 
@@ -247,7 +301,70 @@ void Game::handleWeaponFire() {
     if (hitEnemy) {
         hitEnemy->takeDamage(weaponDamage);
     }
+
+    float minDist = 8.0f;
+    float pushStrength = 0.2f;
+
+    for (int i = 0; i < enemies_.size(); i++) {
+        for (int j = i + 1; j < enemies_.size(); j++) {
+
+            Vec2 p1 = enemies_[i].getPosition();
+            Vec2 p2 = enemies_[j].getPosition();
+
+            float dx = p2.x - p1.x;
+            float dy = p2.y - p1.y;
+            float dist = std::sqrt(dx*dx + dy*dy);
+
+            if (dist < minDist && dist > 0.001f) {
+                float overlap = (minDist - dist) * 0.5f;
+
+                float ux = dx / dist;
+                float uy = dy / dist;
+
+                enemies_[i].addOffset({-ux * overlap * pushStrength,
+                                       -uy * overlap * pushStrength});
+
+                enemies_[j].addOffset({ ux * overlap * pushStrength,
+                                        uy * overlap * pushStrength});
+            }
+        }
+    }
+    // ============================================
+    // 3. 敌人攻击玩家（贴脸距离 + 3 秒冷却）
+    // ============================================
+    for (auto& e : enemies_) {
+
+        // 敌人与玩家的距离
+        float dx = e.getPosition().x - player_->getPosition().x;
+        float dy = e.getPosition().y - player_->getPosition().y;
+        float dist = std::sqrt(dx*dx + dy*dy);
+
+        // 贴脸攻击距离，可调整（15 像素）
+        const float attackRange = 15.0f;
+
+        // 判断贴脸
+        if (dist < attackRange) {
+
+            // 如果冷却结束，可以攻击
+            if (e.attackCooldownFrames_ <= 0) {
+
+                player_->takeDamage(5);   // 扣血 5 点
+
+                std::cout << "[HIT] Player took 5 damage! HP = "
+                          << player_->getHealth() << "\n";
+
+                // 设置冷却：3 秒（FPS * 3）
+                e.attackCooldownFrames_ = GameConfig::TARGET_FPS * 3;
+            }
+        }
+
+        // 冷却计时递减
+        if (e.attackCooldownFrames_ > 0)
+            e.attackCooldownFrames_--;
+    }
 }
+
+
 
 
 void Game::render() {
@@ -274,8 +391,9 @@ void Game::render() {
     
     // render debug information
     renderer_->drawDebugInfo(*player_, inputManager_->shouldShowInfo());
-    
-    renderer_->drawHealthBar(*player_);
+
+    // render player HUD
+    renderer_->drawHUD(*player_);
     
     renderer_->present();
 }
@@ -294,17 +412,88 @@ Vec2 Game::findFreeSpawnPoint() {
     int py = p.y / tileSize;
 
     while (true) {
-        int x = px + (rand() % 21 - 10); // 玩家附近 ±10
+        // 随机在玩家附近 ±10 tiles
+        int x = px + (rand() % 21 - 10);
         int y = py + (rand() % 21 - 10);
 
+        // 越界跳过
         if (x < 0 || x >= map_->getWidth()) continue;
         if (y < 0 || y >= map_->getHeight()) continue;
 
-        if (!map_->isWall(x, y)) {
-            return Vec2{
-                x * tileSize + tileSize * 0.5f,
-                y * tileSize + tileSize * 0.5f
-            };
+        // 当前 tile 必须是空地
+        if (map_->isWall(x, y)) continue;
+
+        // —— 安全半径检查（避免出生在靠墙位置）——
+        // enemy 半径约 10px → tileSize 64px → 检查邻居 1 tile 就足够
+        bool safe = true;
+        int marginTiles = 1;
+
+        for (int yy = y - marginTiles; yy <= y + marginTiles; yy++) {
+            for (int xx = x - marginTiles; xx <= x + marginTiles; xx++) {
+                if (xx < 0 || xx >= map_->getWidth()) continue;
+                if (yy < 0 || yy >= map_->getHeight()) continue;
+
+                if (map_->isWall(xx, yy)) {
+                    safe = false;
+                    break;
+                }
+            }
+            if (!safe) break;
+        }
+
+        if (!safe) continue;
+
+        // —— 找到安全出生点：返回 tile 中心 —
+        return Vec2{
+            x * tileSize + tileSize * 0.5f,
+            y * tileSize + tileSize * 0.5f
+        };
+    }
+}
+
+std::vector<Vec2> Game::findDistributedSpawnPoints(int count)
+{
+    int ts = map_->getTileSize();
+    int w = map_->getWidth();
+    int h = map_->getHeight();
+
+    std::vector<Vec2> candidates;
+
+    // 1. 收集所有潜在合法 tile
+    for (int y = 1; y < h - 1; y++) {
+        for (int x = 1; x < w - 1; x++) {
+
+            int tile = map_->getWallType(x, y);
+            if (tile == 1) continue; // 墙不行
+
+            // —— 周围必须安全（不靠墙）——
+            bool safe = true;
+            for (int yy = y - 1; yy <= y + 1; yy++) {
+                for (int xx = x - 1; xx <= x + 1; xx++) {
+                    if (map_->isWall(xx, yy)) {
+                        safe = false;
+                        break;
+                    }
+                }
+                if (!safe) break;
+            }
+            if (!safe) continue;
+
+            // 合格，加入候选位置（tile中心）
+            candidates.push_back(Vec2{
+                x * ts + ts * 0.5f,
+                y * ts + ts * 0.5f
+            });
         }
     }
+
+    // 2. 均匀挑选点：简单方式 → 分段抽样
+    std::vector<Vec2> result;
+    int step = candidates.size() / count;
+
+    for (int i = 0; i < candidates.size() && result.size() < count; i += step) {
+        result.push_back(candidates[i]);
+    }
+
+    return result;
 }

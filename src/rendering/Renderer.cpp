@@ -2,6 +2,7 @@
 #include "core/Config.h"
 #include "core/Types.h"
 #include "entities/Weapon.h"
+#include "entities/Player.h"
 #ifdef _WIN32
     #include <GL/freeglut.h>
     #include <GL/gl.h>
@@ -25,6 +26,10 @@ Renderer::Renderer(int screenWidth, int screenHeight)
     : screenWidth_(screenWidth), screenHeight_(screenHeight) {
     centerX_ = screenWidth_ / 2;
     centerY_ = screenHeight_ / 2;
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+
 }
 
 void Renderer::clear() {
@@ -83,6 +88,11 @@ void Renderer::draw3DView(const std::vector<RayHit>& rayHits,
 
         previousScreenX = screenX;
     }
+}
+
+void Renderer::drawHUD(const Player& player) {
+    drawHealthBar(player);
+    drawCurrentWeapon();
 }
 
 Vec2 Renderer::realPos(float distanceToProjectedPlane, 
@@ -346,7 +356,15 @@ void Renderer::drawEnemies3D(const std::vector<Enemy>& enemies,
     int numRays = rayHits.size();
     float fov = GameConfig::FOV * Math::DEG_TO_RAD;
 
-    // ------ 1. 按距离排序：远的先画 ------
+    Vec2 playerPos = player.getPosition();
+
+    // --- 1. 生成深度缓冲（墙的距离）---
+    std::vector<float> depthBuffer(numRays);
+    for (int i = 0; i < numRays; i++) {
+        depthBuffer[i] = rayHits[i].distance;
+    }
+
+    // --- 2. 敌人按距离排序（远的先画）---
     struct EnemyInfo {
         const Enemy* e;
         float dist;
@@ -356,69 +374,92 @@ void Renderer::drawEnemies3D(const std::vector<Enemy>& enemies,
     std::vector<EnemyInfo> sorted;
     sorted.reserve(enemies.size());
 
-    Vec2 pp = player.getPosition();
-
     for (const auto& e : enemies) {
         Vec2 ep = e.getPosition();
-        float dx = ep.x - pp.x;
-        float dy = ep.y - pp.y;
-        float dist = std::sqrt(dx*dx + dy*dy);
+
+        float dx = ep.x - playerPos.x;
+        float dy = ep.y - playerPos.y;
+        float dist = std::sqrt(dx * dx + dy * dy);
 
         float angle = std::atan2(dy, dx) - player.getAngle();
+
+        // 角度归一化到 [-π, π]
         while (angle < -Math::PI) angle += Math::TWO_PI;
         while (angle >  Math::PI) angle -= Math::TWO_PI;
 
-        // 不在视野就跳过
-        if (std::fabs(angle) > fov/2) continue;
+        // 不在视野范围 → 跳过
+        if (std::fabs(angle) > fov / 2) continue;
 
         sorted.push_back({ &e, dist, angle });
     }
 
-    // 按距离从远到近排序
     std::sort(sorted.begin(), sorted.end(),
               [](auto& a, auto& b){ return a.dist > b.dist; });
 
+    // --- 3. 逐个绘制敌人（从远到近）---
+    for (const auto& info : sorted) {
+        const Enemy* enemy = info.e;
+        float dist  = info.dist;
+        float angle = info.angle;
 
-    // ------ 2. 对每个敌人逐列渲染 ------
-    for (auto& info : sorted) {
-    //  const Enemy* enemy = info.e;
-        float dist = info.dist;
-        float enemyAngle = info.angle;
-
-        // 屏幕 X 中心位置（对应射线）
-        float ratio = (enemyAngle + fov/2) / fov;
+        // 将角度映射到射线索引
+        float ratio = (angle + fov / 2) / fov;
         int centerRay = ratio * numRays;
 
         if (centerRay < 0 || centerRay >= numRays)
             continue;
 
-        // sprite 大小
-        float height = map.getTileSize() * screenHeight_ / dist;
-        float half = height * 0.5f;
+        // 敌人的 sprite 高度（线性投影）
+        float spriteHeight = map.getTileSize() * screenHeight_ / dist;
+        float halfH = spriteHeight * 0.5f;
 
-        int spriteScreenWidth = (int)height; // 方块怪物：宽度=高度
+        // 宽度 = 高度
+        float spriteWidth = spriteHeight;
 
-        float screenCenterX = (float)centerRay / numRays * screenWidth_;
-        float centerY = screenHeight_ / 2;
+        // 敌人中心投影到屏幕 X 坐标
+        float screenCenterX = (float)centerRay / (float)numRays * screenWidth_;
+        float screenCenterY = screenHeight_ / 2.0f;
 
-        // ------ 逐列渲染 ------ 
-        for (int xOffset = -spriteScreenWidth/2; xOffset <= spriteScreenWidth/2; xOffset++) {
-            int rayId = centerRay + (xOffset * numRays / screenWidth_);
-            if (rayId < 0 || rayId >= numRays) continue;
+        // ====== 1. 加载敌人贴图 ======
+        GLuint tex = textureManager_.getTextureID(enemy->getTextureId());
+        if (tex == 0) continue;
 
-            // 用射线判断墙是否挡住这“一列”
-            if (rayHits[rayId].hit && rayHits[rayId].distance < dist)
-                continue;   // 这一列被墙挡住 → 不画
+        glEnable(GL_TEXTURE_2D);
+        glBindTexture(GL_TEXTURE_2D, tex);
+        glColor3f(1, 1, 1);
 
-            float screenX = screenCenterX + xOffset;
+        // --- 4. 逐列绘制 sprite ---
+        for (int px = -spriteWidth / 2; px <= spriteWidth / 2; px++) {
 
-            // 画这一列
-            glColor3f(1, 0, 0);
-            glBegin(GL_LINES);
-            glVertex2f(screenX, centerY - half);
-            glVertex2f(screenX, centerY + half);
+            // 像素对应的射线索引
+            int rayId = centerRay + (px * numRays / screenWidth_);
+
+            if (rayId < 0 || rayId >= numRays)
+                continue;
+
+            // --- 深度遮挡 ---
+            if (depthBuffer[rayId] < dist)
+                continue;
+
+            float screenX = screenCenterX + px;
+
+            // ====== 2. 计算贴图 U 坐标 ======
+            float u = (float)(px + spriteWidth / 2) / spriteWidth;
+            float uNext = (float)(px + spriteWidth / 2 + 1) / spriteWidth;
+
+            float x1 = screenX;
+            float x2 = screenX + 1;
+
+            // ====== 3. 用贴图替代红线 ======
+            glBegin(GL_QUADS);
+                glTexCoord2f(u,     0.0f); glVertex2f(x1, screenCenterY - halfH);
+                glTexCoord2f(u,     1.0f); glVertex2f(x1, screenCenterY + halfH);
+                glTexCoord2f(uNext, 1.0f); glVertex2f(x2, screenCenterY + halfH);
+                glTexCoord2f(uNext, 0.0f); glVertex2f(x2, screenCenterY - halfH);
             glEnd();
         }
+
+        glDisable(GL_TEXTURE_2D);
     }
 }
 
@@ -477,6 +518,30 @@ void Renderer::drawWeaponSprite(const Player& player) {
     // Disable texture and blending
     glDisable(GL_BLEND);
     glDisable(GL_TEXTURE_2D);
+
+// Example to help you load texture
+void Renderer::drawCurrentWeapon() {
+    GLuint pistolID = textureManager_.getTextureID(10);  //ID define on Game.cpp
+    float pistol_width = RenderConfig::PISTOL_TEXTURE_SIZE;
+    float pistol_height = pistol_width;
+
+    float draw_x = screenWidth_ - pistol_width - 10.0f;
+    float draw_y = screenHeight_ - pistol_height - 10.0f;
+
+    glEnable(GL_TEXTURE_2D);
+    glBindTexture(GL_TEXTURE_2D, pistolID);
+    glColor4f(1.0f, 1.0f, 1.0f, 1.0f); 
+
+
+    glBegin(GL_QUADS);
+        glTexCoord2f(0.0f, 0.0f); glVertex2f(draw_x, draw_y);
+        glTexCoord2f(0.0f, 1.0f); glVertex2f(draw_x, draw_y + pistol_height);
+        glTexCoord2f(1.0f, 1.0f); glVertex2f(draw_x + pistol_width, draw_y + pistol_height);
+        glTexCoord2f(1.0f, 0.0f); glVertex2f(draw_x + pistol_width, draw_y);
+    glEnd();                                            
+
+    glDisable(GL_TEXTURE_2D);
+    glColor3f(1.0f, 1.0f, 1.0f);
 }
 
 void Renderer::present() {

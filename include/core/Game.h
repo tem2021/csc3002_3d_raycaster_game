@@ -34,6 +34,7 @@ private:
     std::unique_ptr<Renderer> renderer_;
     std::unique_ptr<InputManager> inputManager_;
     std::vector<Enemy> enemies_;
+    std::vector<Vec2> findDistributedSpawnPoints(int count);
     int screenWidth_;
     int screenHeight_;
     float deltaTime_;  // Time since last frame

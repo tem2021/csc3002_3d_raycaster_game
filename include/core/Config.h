@@ -1,6 +1,7 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
+#include "data/textures/pistol.h"
 namespace Math {
     constexpr float PI = 3.1415926535f;
     constexpr float TWO_PI = 6.2831853071f;
@@ -34,6 +35,9 @@ namespace RenderConfig {
     constexpr float FOV_HEIGHT =  53.13010235415598f;
     constexpr float CROSSHAIR_SIZE = 0.01f;
     constexpr float MIN_WALL_DISTANCE = 0.1f;  // Minimum distance to prevent texture distortion
+
+    // Weapon Size 
+    constexpr float PISTOL_TEXTURE_SIZE = 80.0f;
 }
 
 namespace PlayerConfig {
