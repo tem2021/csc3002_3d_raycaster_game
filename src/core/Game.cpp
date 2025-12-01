@@ -1,8 +1,11 @@
 #include "core/Game.h"
 #include "core/Config.h"
 #include "entities/Weapon.h"
+#include "entities/Enemy.h"
 #include "data/maps/level1.h"
 #include <cmath>
+#include <random>
+#include <algorithm> 
 
 // Include texture data (only those with 3D array format)
 #include "data/textures/brick.h"
@@ -20,6 +23,12 @@
 #include "data/textures/Hippo_1.h"
 #include "data/textures/Hippo_2.h"
 #include "data/textures/Hippo_3.h"
+#include "data/textures/Panda_1.h"
+#include "data/textures/Panda_2.h"
+#include "data/textures/Panda_3.h"
+#include "data/textures/Monkey_1.h"
+#include "data/textures/Monkey_2.h"
+#include "data/textures/Monkey_3.h"
 #include "data/textures/unfiredgun.h"
 #include "data/textures/firedgun.h"
 
@@ -78,15 +87,33 @@ void Game::init() {
     // --- init enemies ---
     enemies_.clear();
 
-    // 新的全地图均匀生成（例如 20 个）
-    int enemyCount = 40;
+    int enemyCount = 80;    // 新的全地图均匀生成40个
     auto spawnPoints = findDistributedSpawnPoints(enemyCount);
 
     for (auto& pos : spawnPoints) {
-        enemies_.push_back(Enemy(pos, 0.3f));
-}
 
-    
+        int r = rand() % 3;
+        Enemy::EnemyType type;
+        float speed;
+
+        if (r == 0) {
+            type = Enemy::EnemyType::Hippo;
+            speed = 0.32f;  // 河马
+        }
+        else if (r == 1) {
+            type = Enemy::EnemyType::Panda;
+            speed = 0.20f;  // 熊猫（最慢）
+        }
+        else {
+            type = Enemy::EnemyType::Monkey;
+            speed = 0.26f;  // 猴子（中速）
+        }
+
+        enemies_.push_back(Enemy(pos, speed, type));
+    }
+
+
+
     // Load all textures
     loadTextures();
 }
@@ -111,10 +138,19 @@ void Game::loadTextures() {
     texManager.loadTexture(100, CUHK_SZ_DATA);
     texManager.loadTexture(101, HAJIMI_DATA);
 
-    // Enemy Texture
+    // Hippo
     texManager.loadTexture(200, HIPPO_1_DATA);  // 普通
     texManager.loadTexture(201, HIPPO_2_DATA);  // 愤怒
     texManager.loadTexture(202, HIPPO_3_DATA);  // 乖巧
+    // Panda
+    texManager.loadTexture(210, PANDA_1_DATA);
+    texManager.loadTexture(211, PANDA_2_DATA);
+    texManager.loadTexture(212, PANDA_3_DATA);
+
+    // Monkey
+    texManager.loadTexture(220, MONKEY_1_DATA);
+    texManager.loadTexture(221, MONKEY_2_DATA);
+    texManager.loadTexture(222, MONKEY_3_DATA);
 
     //Weapon Texture
     texManager.loadTexture(300, PISTOL_DATA);
@@ -189,6 +225,10 @@ void Game::processPlayerInput() {
             enemies_[idx].onFedCorrect();
             std::cout << "[DEBUG] Happy enemy index = " << idx << "\n";
         }
+
+        if (inputManager_->isKeyPressed('3')) {
+        enemies_[idx].onFedSuccess();
+    }
     }
 }
 
@@ -233,9 +273,8 @@ void Game::update() {
             }
         }
     }
-    // ============================================
-    // 3. 敌人攻击玩家（贴脸距离 + 3 秒冷却）
-    // ============================================
+
+    // 敌人攻击玩家（贴脸距离 + 3 秒冷却）
     for (auto& e : enemies_) {
 
         // 敌人与玩家的距离
@@ -252,7 +291,7 @@ void Game::update() {
             // 如果冷却结束，可以攻击
             if (e.attackCooldownFrames_ <= 0) {
 
-                player_->takeDamagePlayer(5);   // 扣血 5 点
+                player_->takeDamagePlayer(e.getAttackDamage());  // 扣血 5 点
 
                 std::cout << "[HIT] Player took 5 damage! HP = "
                           << player_->getHealth() << "\n";
@@ -261,6 +300,7 @@ void Game::update() {
                 e.attackCooldownFrames_ = GameConfig::TARGET_FPS * 3;
             }
         }
+
 
         // 冷却计时递减
         if (e.attackCooldownFrames_ > 0) e.attackCooldownFrames_--;
@@ -457,7 +497,7 @@ std::vector<Vec2> Game::findDistributedSpawnPoints(unsigned int count)
         for (int x = 1; x < w - 1; x++) {
 
             int tile = map_->getWallType(x, y);
-            if (tile == 1) continue; // 墙不行
+            if (tile != 0) continue;   // 只允许空地
 
             // —— 周围必须安全（不靠墙）——
             bool safe = true;
@@ -479,8 +519,13 @@ std::vector<Vec2> Game::findDistributedSpawnPoints(unsigned int count)
             });
         }
     }
-
-    // 2. 均匀挑选点：简单方式 → 分段抽样
+    // 打乱候选点顺序确保分布均匀
+    if (!candidates.empty()) {
+        std::random_device rd;
+        std::mt19937 g(rd());
+        std::shuffle(candidates.begin(), candidates.end(), g);
+    }
+    // 均匀挑选点：简单方式 → 分段抽样
     std::vector<Vec2> result;
     int step = candidates.size() / count;
 
