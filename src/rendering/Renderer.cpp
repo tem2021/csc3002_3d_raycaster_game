@@ -375,6 +375,7 @@ void Renderer::drawEnemies3D(const std::vector<Enemy>& enemies,
     sorted.reserve(enemies.size());
 
     for (const auto& e : enemies) {
+        if (!e.isAlive()) continue;
         Vec2 ep = e.getPosition();
 
         float dx = ep.x - playerPos.x;

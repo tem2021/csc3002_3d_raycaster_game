@@ -23,47 +23,59 @@ void Enemy::update(const Vec2& playerPos, const Map& map)
     const float deAgroDistance  = ts * 2.0f;   // 离开 16 格才恢复
 
 
-    // 手动覆盖优先级（按键 1/2 触发）
+     // 先处理“手动情绪覆盖”的计时
     if (manualOverride_) {
-        manualOverrideFrames_--;
+        if (manualOverrideFrames_ > 0) {
+            manualOverrideFrames_--;
+        }
         if (manualOverrideFrames_ <= 0) {
+            // 手动状态结束 → 把控制权还给自动系统
             manualOverride_ = false;
         }
     }
 
+    // （可选）保持 stateFramesRemaining_ 跟计时同步，但不参与决策
+    if (stateFramesRemaining_ > 0) {
+        stateFramesRemaining_--;
+    }
 
-    // 自动愤怒 / 自动恢复（只有非手动状态时执行）
-    // 且 Happy 不会被自动AI覆盖
+    // 自动愤怒 / 自动恢复
+    // 只有在 “不处于手动覆盖状态” 时才生效
+    if (!manualOverride_) {
 
-    if (!manualOverride_ && state_ != EmotionState::Happy)
-    {
-        // ---- 自动进入愤怒 ----
-        if (!isAggro_ && distToPlayer < agroDistance) {
-            isAggro_ = true;
+        // 更新 isAggro_（带迟滞，防止来回抖）
+        if (isAggro_) {
+            // 已经愤怒 → 只有离得足够远才恢复
+            if (distToPlayer > deAgroDistance) {
+                isAggro_ = false;
+            }
+        } else {
+            // 还没愤怒 → 贴得足够近才愤怒
+            if (distToPlayer < agroDistance) {
+                isAggro_ = true;
+            }
+        }
+
+        // 根据 isAggro_ 决定当前状态与贴图
+        if (isAggro_) {
             state_ = EmotionState::Angry;
-            textureId_ = ANGRY_TEXTURE_ID;
-        }
-
-        // ---- 自动恢复普通 ----
-        if (isAggro_ && distToPlayer > deAgroDistance) {
-            isAggro_ = false;
+            switch (type_) {
+                case EnemyType::Hippo:  textureId_ = HIPPO_ANGRY;  break;
+                case EnemyType::Panda:  textureId_ = PANDA_ANGRY;  break;
+                case EnemyType::Monkey: textureId_ = MONKEY_ANGRY; break;
+            }
+        } else {
             state_ = EmotionState::Normal;
-            textureId_ = NORMAL_TEXTURE_ID;
+            switch (type_) {
+                case EnemyType::Hippo:  textureId_ = HIPPO_NORMAL;  break;
+                case EnemyType::Panda:  textureId_ = PANDA_NORMAL;  break;
+                case EnemyType::Monkey: textureId_ = MONKEY_NORMAL; break;
+            }
         }
     }
+    // 注意：如果 manualOverride_ == true，就完全保留喂食时设置的状态和贴图
+    //（Happy/Angry 不会被自动逻辑覆盖），直到计时结束。
 
-    // 情绪计时（用于 Happy / 手动 Angry）
-    if (!isAggro_ && state_ != EmotionState::Normal)
-    {
-        if (stateFramesRemaining_ > 0) {
-            stateFramesRemaining_--;
-        }
-
-        if (stateFramesRemaining_ <= 0) {
-            state_ = EmotionState::Normal;
-            textureId_ = NORMAL_TEXTURE_ID;
-        }
-    }
 
     float dist = distToPlayer;
 
@@ -80,22 +92,16 @@ void Enemy::update(const Vec2& playerPos, const Map& map)
         return;                  // 不执行后续移动逻辑
     }
 
-    // -------------------------
-    // 1. 基本方向
-    // -------------------------
+    // 基本方向
     Vec2 forward = { dx / dist, dy / dist };
     Vec2 perp = { -forward.y, forward.x };
 
-    // -------------------------
-    // 2. 蛇形（保持原来的效果）
-    // -------------------------
+    // 蛇形
     timeOffset_ += (dist < 5.0f ? 0.05f : 0.02f);
     float snake = std::sin(timeOffset_ * 2.5f);
     float lateral = snake * 0.40f;
 
-    // -------------------------
-    // 3. tile-level 转弯辅助（加强版）
-    // -------------------------
+    // tile-level 转弯辅助
     int ex = (int)(position_.x / ts);
     int ey = (int)(position_.y / ts);
     int px = (int)(playerPos.x / ts);
@@ -117,7 +123,6 @@ void Enemy::update(const Vec2& playerPos, const Map& map)
 
         if (nx < 0 || nx >= map.getWidth()) continue;
         if (ny < 0 || ny >= map.getHeight()) continue;
-
         if (map.isWall(nx, ny)) continue;
 
         float score = -(std::abs(px - nx) + std::abs(py - ny)); // 越靠近玩家越好
@@ -129,16 +134,12 @@ void Enemy::update(const Vec2& playerPos, const Map& map)
         }
     }
 
-    // 归一化
     float lenT = std::sqrt(tileAssist.x*tileAssist.x + tileAssist.y*tileAssist.y);
     if (lenT > 0.01f) {
         tileAssist.x /= lenT;
         tileAssist.y /= lenT;
     }
 
-    // -------------------------
-    // 4. 合并方向（重新调权重）
-    // -------------------------
     Vec2 finalDir = {
         forward.x * 0.6f + tileAssist.x * 0.35f + perp.x * lateral,
         forward.y * 0.6f + tileAssist.y * 0.35f + perp.y * lateral
@@ -150,9 +151,7 @@ void Enemy::update(const Vec2& playerPos, const Map& map)
         finalDir.y /= lenF;
     }
 
-    // -------------------------
-    // 5. 圆形碰撞检测
-    // -------------------------
+    // 圆形碰撞检测
     auto isBlocked = [&](float x, float y) {
         int tx = (int)x / ts;
         int ty = (int)y / ts;
@@ -179,10 +178,7 @@ void Enemy::update(const Vec2& playerPos, const Map& map)
         return false;
     };
 
-
-    // -------------------------
-    // 6. 尝试前进
-    // -------------------------
+    // 尝试前进
     Vec2 newPos = {
         position_.x + finalDir.x * speed_,
         position_.y + finalDir.y * speed_
@@ -193,9 +189,7 @@ void Enemy::update(const Vec2& playerPos, const Map& map)
         return;
     }
 
-    // -------------------------
-    // 7. 强化滑墙逻辑
-    // -------------------------
+    // 滑墙逻辑
     // 尝试沿 X 滑动
     Vec2 tryX = { newPos.x, position_.y };
     if (!circleBlocked(tryX.x, tryX.y)) {
@@ -210,10 +204,7 @@ void Enemy::update(const Vec2& playerPos, const Map& map)
         return;
     }
 
-    // -------------------------
-    // 8. 最终尝试：沿墙方向小步挤过去
-    // （防止永远卡在墙角）
-    // -------------------------
+    // 最终尝试：沿墙方向小步挤过去（防止永远卡在墙角）
     for (auto& d : dirs8)
     {
         float nx = position_.x + d[0] * 0.4f;
@@ -227,28 +218,41 @@ void Enemy::update(const Vec2& playerPos, const Map& map)
     }
 }
 
+// 喂错 → 短暂愤怒
 void Enemy::onFedWrong()
 {
-    // 手动覆盖自动 AI
-    manualOverride_ = true;
-    manualOverrideFrames_ = 30;
+    manualOverride_      = true;
+    manualOverrideFrames_ = ANGRY_DURATION_FRAMES;
 
     state_ = EmotionState::Angry;
-    textureId_ = ANGRY_TEXTURE_ID;
-    stateFramesRemaining_ = 30;  // 原来保持 0.5 秒
+
+    switch (type_) {
+        case EnemyType::Hippo:  textureId_ = HIPPO_ANGRY;  break;
+        case EnemyType::Panda:  textureId_ = PANDA_ANGRY;  break;
+        case EnemyType::Monkey: textureId_ = MONKEY_ANGRY; break;
+    }
+
+    stateFramesRemaining_ = ANGRY_DURATION_FRAMES;
 }
 
+// 喂对 → 短暂开心
 void Enemy::onFedCorrect()
 {
-    // 手动覆盖自动 AI
-    manualOverride_ = true;
-    manualOverrideFrames_ = 30;
+    manualOverride_      = true;
+    manualOverrideFrames_ = HAPPY_DURATION_FRAMES;
 
     state_ = EmotionState::Happy;
-    textureId_ = HAPPY_TEXTURE_ID;
-    stateFramesRemaining_ = 30;
+
+    switch (type_) {
+        case EnemyType::Hippo:  textureId_ = HIPPO_HAPPY;  break;
+        case EnemyType::Panda:  textureId_ = PANDA_HAPPY;  break;
+        case EnemyType::Monkey: textureId_ = MONKEY_HAPPY; break;
+    }
+
+    stateFramesRemaining_ = HAPPY_DURATION_FRAMES;
 }
 
+// 敌人受伤（玩家攻击用）
 void Enemy::takeDamageEnemy(int damage) {
     if (!alive_) return;
     
@@ -259,10 +263,29 @@ void Enemy::takeDamageEnemy(int damage) {
     }
 }
 
+// 强制恢复普通（立即退出手动和自动愤怒）
 void Enemy::resetEmotion()
 {
+    manualOverride_       = false;
+    manualOverrideFrames_ = 0;
+    isAggro_              = false;
+
     state_ = EmotionState::Normal;
     stateFramesRemaining_ = 0;
-    textureId_ = NORMAL_TEXTURE_ID;
+
+    switch (type_) {
+        case EnemyType::Hippo:  textureId_ = HIPPO_NORMAL;  break;
+        case EnemyType::Panda:  textureId_ = PANDA_NORMAL;  break;
+        case EnemyType::Monkey: textureId_ = MONKEY_NORMAL; break;
+    }
 }
 
+void Enemy::onFedSuccess()
+{
+    alive_ = false;
+    health_ = 0;
+
+    // 如果你想保留 0.5 秒可爱贴图，也可以在这里设置 pendingDisappear_
+    // 不过你目前需要的是立即消失：
+    // 所以这样足够。
+}
