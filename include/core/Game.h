@@ -43,6 +43,7 @@ private:
     void processWeaponInput();
     void handleWeaponFire();
     Vec2 findFreeSpawnPoint();
+    Enemy* detectEnemyHit();
 };
 
 #endif // GAME_H

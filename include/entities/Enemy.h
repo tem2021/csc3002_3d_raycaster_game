@@ -85,7 +85,12 @@ public:
     void onFedCorrect();  // 喂对 → 乖巧形态
     void resetEmotion();  // 可选：强制恢复普通形态
     void onFedSuccess();  // 喂食成功 → 敌人消失
+
     int attackCooldownFrames_ = 0;  // 攻击冷却
+    // === 连续正确喂食计数 ===
+    int  getCorrectFeedCount() const { return correctFeedCount_; }
+    void resetCorrectFeedCount() { correctFeedCount_ = 0; }
+    void incrementCorrectFeedCount() { ++correctFeedCount_; }
 
 private:
     EnemyType type_;       // 物种
@@ -101,9 +106,11 @@ private:
     int attackDamage_ = 5;   // 默认扣 5 点血
 
     int textureId_;
-    
+    int correctFeedCount_ = 0;  // 同一只动物连续喂对的次数
+
     // 情绪系统
     EmotionState state_ = EmotionState::Normal;
     int stateFramesRemaining_ = 0;   // 剩余帧数
+
 };
 #endif

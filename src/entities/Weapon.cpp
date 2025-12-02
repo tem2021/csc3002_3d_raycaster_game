@@ -19,6 +19,17 @@ void Weapon::update(float deltaTime) {
     }
 }
 
+float Weapon::getFireAnimationProgress() const {
+    if (!isFiring_) return 0.0f;
+    float duration = RenderConfig::FIRE_ANIMATION_DURATION;
+    if (duration <= 0.0f) return 0.0f;
+
+    float t = fireAnimationTime_ / duration;
+    if (t < 0.0f) t = 0.0f;
+    if (t > 1.0f) t = 1.0f;
+    return t;
+}
+
 RayHit WeaponHitDetector::fireRay(const Vec2& origin, float angle, bool hasWeapon, const Raycaster& raycaster) {
     // 只有在持有武器状态下才进行命中检测
     if (!hasWeapon) {

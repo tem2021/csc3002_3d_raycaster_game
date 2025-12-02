@@ -83,10 +83,17 @@ int main(int argc, char* argv[]) {
     glutIgnoreKeyRepeat(1);
     
     // Set OpenGL
-    int width = glutGet(GLUT_SCREEN_WIDTH);
-    int height = glutGet(GLUT_SCREEN_HEIGHT);
     glClearColor(0.3f, 0.3f, 0.3f, 0.0f);
-    gluOrtho2D(0, width, height, 0);
+
+    // 设置投影矩阵：用窗口宽高作为坐标范围
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    gluOrtho2D(0, GameConfig::WINDOW_WIDTH, GameConfig::WINDOW_HEIGHT, 0);
+
+    // 回到模型矩阵
+    glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity();
+
     
     // Hide Cursor
     glutSetCursor(GLUT_CURSOR_NONE);

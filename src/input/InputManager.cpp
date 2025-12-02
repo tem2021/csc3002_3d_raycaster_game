@@ -2,12 +2,15 @@
 #include <GL/freeglut.h>
 #include <GL/freeglut_ext.h>
 
-InputManager::InputManager(int centerX, int centerY) 
-    : mouseDeltaX_(0.0f), centerX_(centerX), centerY_(centerY), 
-      showInfo_(false), exitRequested_(false), sprintPressed_(false),
-      firePressed_(false), reloadPressed_(false) {
+InputManager::InputManager(int centerX, int centerY)
+    : mouseDeltaX_(0.0f), centerX_(centerX), centerY_(centerY),
+    showInfo_(false), exitRequested_(false), sprintPressed_(false),
+    firePressed_(false), reloadPressed_(false),
+    fireClicked_(false)        
+{
     keyStates_.fill(false);
 }
+
 
 unsigned char InputManager::normalizeKey(unsigned char key) const {
     if (key >= 'A' && key <= 'Z') return key + ('a' - 'A'); 
@@ -64,18 +67,27 @@ float InputManager::consumeMouseDelta() {
     return delta;
 }
 
-void InputManager::handleMouseButton(int button, int state, int , int ) {
+void InputManager::handleMouseButton(int button, int state, int, int) {
     if (button == GLUT_LEFT_BUTTON) {
         if (state == GLUT_DOWN) {
             firePressed_ = true;
-        } else {
+            fireClicked_ = true;    
+        }
+        else {
             firePressed_ = false;
         }
     }
 }
 
+
 bool InputManager::consumeReloadPress() {
     bool pressed = reloadPressed_;
     reloadPressed_ = false;
     return pressed;
+}
+
+bool InputManager::consumeFireClick() {
+    bool clicked = fireClicked_;
+    fireClicked_ = false;    
+    return clicked;
 }

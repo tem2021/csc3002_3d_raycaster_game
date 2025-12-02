@@ -31,6 +31,13 @@
 #include "data/textures/Monkey_3.h"
 #include "data/textures/unfiredgun.h"
 #include "data/textures/firedgun.h"
+#include "data/textures/Watermelon_idle.h"
+#include "data/textures/Watermelon_throw.h"
+#include "data/textures/Bamboo_idle.h"
+#include "data/textures/Bamboo_throw.h"
+#include "data/textures/Banana_idle.h"
+#include "data/textures/Banana_throw.h"
+
 
 #include "rendering/TextureManager.h"
 
@@ -49,8 +56,8 @@ Game::Game() : screenWidth_(0), screenHeight_(0), deltaTime_(0.0166667f) {}
 
 void Game::init() {
     // gain the size of the screen
-    screenWidth_ = glutGet(GLUT_SCREEN_WIDTH);
-    screenHeight_ = glutGet(GLUT_SCREEN_HEIGHT);
+    screenWidth_ = GameConfig::WINDOW_WIDTH;
+    screenHeight_ = GameConfig::WINDOW_HEIGHT;
     
     // create the map
     int tileSize = screenHeight_ / MapData::LEVEL1_HEIGHT;
@@ -87,7 +94,7 @@ void Game::init() {
     // --- init enemies ---
     enemies_.clear();
 
-    int enemyCount = 80;    // 新的全地图均匀生成40个
+    int enemyCount = 20;    // 新的全地图均匀生成40个
     auto spawnPoints = findDistributedSpawnPoints(enemyCount);
 
     for (auto& pos : spawnPoints) {
@@ -157,6 +164,19 @@ void Game::loadTextures() {
     texManager.loadTexture(301, UNFIREDGUN_DATA);
     texManager.loadTexture(302, FIREDGUN_DATA);
 
+    // Fruit Weapon Textures
+    // 西瓜：310/311
+    texManager.loadTexture(310, WATERMELON_IDLE_DATA);
+    texManager.loadTexture(311, WATERMELON_THROW_DATA);
+
+    // 竹子：312/313
+    texManager.loadTexture(312, BAMBOO_IDLE_DATA);
+    texManager.loadTexture(313, BAMBOO_THROW_DATA);
+
+    // 香蕉：314/315
+    texManager.loadTexture(314, BANANA_IDLE_DATA);
+    texManager.loadTexture(315, BANANA_THROW_DATA);
+
     std::cout << "✓ All textures loaded successfully!" << std::endl;
 }
 
@@ -164,6 +184,21 @@ void Game::handleInput() {
     processPlayerInput();
     processWeaponInput();
 }
+
+
+// 判断某种水果是不是喂对了这只动物
+static bool isCorrectFruitForEnemy(FruitType fruit, Enemy::EnemyType type) {
+    switch (type) {
+    case Enemy::EnemyType::Hippo:  // 河马吃西瓜
+        return fruit == FruitType::Watermelon;
+    case Enemy::EnemyType::Panda:  // 熊猫吃竹子
+        return fruit == FruitType::Bamboo;
+    case Enemy::EnemyType::Monkey: // 猴子吃香蕉
+        return fruit == FruitType::Banana;
+    }
+    return false;
+}
+
 
 // =====================
 // helper: 找最近的敌人
@@ -213,22 +248,18 @@ void Game::processPlayerInput() {
         player_->rotate(mouseDelta * GameConfig::ROTATION_SPEED);
     }
 
-    int idx = getClosestEnemyIndex(enemies_, *player_);
-
-    if (idx != -1) {
+    // --- 武器切换：1/2/3 在三种水果枪之间切换 ---
+    Weapon* w = player_->getWeapon();
+    if (w && player_->hasWeapon()) {
         if (inputManager_->isKeyPressed('1')) {
-            enemies_[idx].onFedWrong();
-            std::cout << "[DEBUG] Angry enemy index = " << idx << "\n";
+            w->setFruitType(FruitType::Watermelon); // 西瓜枪（喂河马）
         }
-        
         if (inputManager_->isKeyPressed('2')) {
-            enemies_[idx].onFedCorrect();
-            std::cout << "[DEBUG] Happy enemy index = " << idx << "\n";
+            w->setFruitType(FruitType::Bamboo);     // 竹子枪（喂熊猫）
         }
-
         if (inputManager_->isKeyPressed('3')) {
-        enemies_[idx].onFedSuccess();
-    }
+            w->setFruitType(FruitType::Banana);     // 香蕉枪（喂猴子）
+        }
     }
 }
 
@@ -307,99 +338,120 @@ void Game::update() {
     }
 }
 
+// Game.cpp
+
 void Game::processWeaponInput() {
     // Handle weapon firing
-    if (inputManager_->isFirePressed()) {
+    if (inputManager_->consumeFireClick()) {   
         handleWeaponFire();
     }
-    
+
     // Handle reload (consume the reload key press)
     if (inputManager_->consumeReloadPress()) {
         player_->reloadWeapon();
     }
 }
 
+
 void Game::handleWeaponFire() {
+    // 1. 触发武器的开火动画（如果 fire 返回 false，可用来做冷却/没子弹）
     if (!player_->fireWeapon()) {
-        return;  // Weapon couldn't fire (no ammo or cooldown)
+        return;
     }
-    
-    // Get player info
+
+    Weapon* weapon = player_->getWeapon();
+    if (!weapon) return;
+
+    // 2. 用中心射线找出打中的那只敌人
+    Enemy* e = detectEnemyHit();
+    if (!e) {
+        // 没打中任何动物
+        return;
+    }
+
+    // 3. 判断当前水果是不是喂对了这只敌人
+    bool correct = isCorrectFruitForEnemy(
+        weapon->getFruitType(),
+        e->getType()
+    );
+
+    if (correct) {
+        // 喂对了：播放开心表情 & 连续计数 +1
+        e->onFedCorrect();
+        e->incrementCorrectFeedCount();
+
+        // 同一只敌人连续喂对三次 → 成功喂服，敌人消失
+        if (e->getCorrectFeedCount() >= 3) {
+            e->onFedSuccess();
+        }
+    }
+    else {
+        // 喂错了：播放生气表情，并且把连续计数清零
+        e->onFedWrong();
+        e->resetCorrectFeedCount();
+    }
+}
+
+
+Enemy* Game::detectEnemyHit() {
+    // 玩家位置和朝向
     Vec2 playerPos = player_->getPosition();
     float playerAngle = player_->getAngle();
-    
-    // Get weapon stats
-    const Weapon* weapon = player_->getWeapon();
-    if (!weapon) return;
-    
-    float weaponRange = weapon->getRange();
-    int weaponDamage = weapon->getDamage();
-    
-    // Cast a ray from the player's position in the direction they're facing
-    // This uses the same raycasting logic as the renderer
+
+    // 先用地图射线算出前面最近的墙，射线不能穿墙
     RayHit wallHit = raycaster_->castRay(playerPos, playerAngle);
-    
-    // Determine the maximum distance to check for enemies
-    // Either the weapon range or the distance to the wall, whichever is closer
-    float maxCheckDistance = weaponRange;
-    if (wallHit.hit && wallHit.distance < weaponRange) {
-        maxCheckDistance = wallHit.distance;
-    }
-    
-    // Now check which enemy (if any) is hit by this ray
+
+    // 最大检测距离 = 墙距离（没有墙就给一个很大的值）
+    float maxCheckDistance = wallHit.hit ? wallHit.distance : 1e9f;
+
     Enemy* hitEnemy = nullptr;
     float closestEnemyDist = maxCheckDistance;
-    
-    // Check each enemy to see if the ray intersects with it
+
+    // 一条正中心射线：找所有在这条射线上的敌人，选最近的一只
     for (auto& enemy : enemies_) {
         if (!enemy.isAlive()) continue;
-        
+
         Vec2 enemyPos = enemy.getPosition();
-        
-        // Calculate the distance from player to enemy
         Vec2 toEnemy = enemyPos - playerPos;
         float distToEnemy = toEnemy.length();
-        
-        // Skip if enemy is farther than our max check distance
+
+        // 超过墙/武器最大距离就不用管
         if (distToEnemy > closestEnemyDist) continue;
-        
-        // Calculate the perpendicular distance from enemy to the ray
-        // The ray goes in direction (cos(playerAngle), sin(playerAngle))
-        Vec2 rayDir = Vec2{std::cos(playerAngle), std::sin(playerAngle)};
-        
-        // Project toEnemy onto the ray direction
+
+        // 射线方向向量
+        Vec2 rayDir{ std::cos(playerAngle), std::sin(playerAngle) };
+
+        // 把敌人向量投影到射线方向上
         float projectionLength = toEnemy.x * rayDir.x + toEnemy.y * rayDir.y;
-        
-        // Skip if enemy is behind the player
+
+        // 在玩家后面就跳过
         if (projectionLength < 0) continue;
-        
-        // Calculate the perpendicular distance
+
+        // 垂直距离
         Vec2 projectedPoint = rayDir * projectionLength;
         Vec2 perpVector = toEnemy - projectedPoint;
         float perpDistance = perpVector.length();
-        
-        // Define enemy hitbox radius (half of tile size is reasonable)
+
+        // 敌人圆形 hitbox 半径（大概是 tileSize 的 0.3）
         float enemyRadius = map_->getTileSize() * 0.3f;
-        
-        // Check if the ray intersects the enemy's hitbox
+
+        // 射线是否穿过圆
         if (perpDistance < enemyRadius) {
-            // Calculate actual hit distance along the ray
-            float actualHitDistance = projectionLength - std::sqrt(enemyRadius * enemyRadius - perpDistance * perpDistance);
+            float actualHitDistance = projectionLength
+                - std::sqrt(enemyRadius * enemyRadius
+                    - perpDistance * perpDistance);
             if (actualHitDistance < 0) actualHitDistance = 0;
-            
-            // This enemy is hit! Check if it's the closest one
+
             if (actualHitDistance < closestEnemyDist) {
                 hitEnemy = &enemy;
                 closestEnemyDist = actualHitDistance;
             }
         }
     }
-    
-    // Apply damage to the hit enemy
-    if (hitEnemy) {
-        hitEnemy->takeDamageEnemy(weaponDamage);
-    }
+
+    return hitEnemy; // 可能为 nullptr（没打中）
 }
+
 
 
 void Game::render() {

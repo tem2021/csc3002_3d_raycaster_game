@@ -47,7 +47,7 @@ private:
 
     // HUD component
     void drawHealthBar(const Player& player);
-    void drawCurrentWeapon();
+    void drawCurrentWeapon(const Player& player);
 };
 
 #endif // RENDERER_H
