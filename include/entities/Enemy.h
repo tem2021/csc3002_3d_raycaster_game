@@ -39,7 +39,7 @@ public:
 
     // 构造函数
     Enemy(const Vec2& pos, float speed, EnemyType type)
-        : position_(pos), speed_(speed), type_(type)
+        :  type_(type), position_(pos),speed_(speed)
     {
         switch (type_) {
             case EnemyType::Hippo:
