@@ -92,7 +92,7 @@ void Renderer::draw3DView(const std::vector<RayHit>& rayHits,
 
 void Renderer::drawHUD(const Player& player) {
     drawHealthBar(player);
-    drawCurrentWeapon();
+    drawCurrentWeapon(player);
 }
 
 Vec2 Renderer::realPos(float distanceToProjectedPlane, 
@@ -465,60 +465,72 @@ void Renderer::drawEnemies3D(const std::vector<Enemy>& enemies,
 }
 
 void Renderer::drawWeaponSprite(const Player& player) {
-    // Only draw when weapon is equipped
-    if (!player.hasWeapon()) {
-        return;
-    }
-    
     const Weapon* weapon = player.getWeapon();
-    if (!weapon) {
-        return;
+    if (!weapon || !player.hasWeapon()) return;
+
+    // 1. 决定 baseId
+    int baseId = 310; // 默认西瓜 idle
+    switch (weapon->getFruitType()) {
+    case FruitType::Watermelon: baseId = 310; break; // 310 idle, 311 throw
+    case FruitType::Bamboo:     baseId = 312; break; // 312 idle, 313 throw
+    case FruitType::Banana:     baseId = 314; break; // 314 idle, 315 throw
     }
-    
-    // defined on Game::loadTextures()
-    int TEXTURE_ID_UNFIRED_GUN = 301;
-    int TEXTURE_ID_FIRED_GUN = 302;
-    
-    // Select texture based on weapon state
+
+    // 2. idle / throw 选择
     bool isFiring = weapon->isFiring();
-    int textureId = isFiring ? TEXTURE_ID_FIRED_GUN : TEXTURE_ID_UNFIRED_GUN;
-    
-    // Get OpenGL texture ID
+    int textureId = baseId + (isFiring ? 1 : 0);
+
     GLuint texID = textureManager_.getTextureID(textureId);
-    if (texID == 0) {
-        return;  // Texture not loaded
-    }
-    
-    // Weapon sprite dimensions (keep square to match 64x64 texture)
+    if (texID == 0) return;   // 没加载到纹理
+
     float spriteHeight = screenHeight_ * RenderConfig::WEAPON_SPRITE_HEIGHT_RATIO;
     float spriteWidth = spriteHeight;
-    
-    // Position: bottom center of screen
-    float spriteX = centerX_ - spriteWidth / 2.0f;
-    float spriteY = screenHeight_ - spriteHeight -
-        RenderConfig::WEAPON_SPRITE_BOTTOM_MARGIN;
-    
+
+    float offsetY = 0.0f;
+    float scale = 1.0f;
+
+    if (isFiring) {
+        float t = weapon->getFireAnimationProgress();
+        offsetY = -spriteHeight * 0.2f * t;
+        scale = 1.0f + 0.15f * t;
+    }
+
+    float scaledW = spriteWidth * scale;
+    float scaledH = spriteHeight * scale;
+
+    float centerX = screenWidth_ / 2.0f;
+    float x = centerX - scaledW / 2.0f;
+    float y = screenHeight_ - scaledH - RenderConfig::WEAPON_SPRITE_BOTTOM_MARGIN + offsetY;
+
     glEnable(GL_TEXTURE_2D);
     glBindTexture(GL_TEXTURE_2D, texID);
-    glColor4f(1.0f, 1.0f, 1.0f, 1.0f);  
-    
-    // Draw textured quad
+    glDisable(GL_DEPTH_TEST);
+
+    glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity();
+
     glBegin(GL_QUADS);
-        glTexCoord2f(0.0f, 0.0f); glVertex2f(spriteX, spriteY);
-        glTexCoord2f(1.0f, 0.0f); glVertex2f(spriteX + spriteWidth, spriteY);
-        glTexCoord2f(1.0f, 1.0f); glVertex2f(spriteX + spriteWidth, spriteY + spriteHeight);
-        glTexCoord2f(0.0f, 1.0f); glVertex2f(spriteX, spriteY + spriteHeight);
+    glTexCoord2f(0.0f, 0.0f); glVertex2f(x, y);
+    glTexCoord2f(0.0f, 1.0f); glVertex2f(x, y + scaledH);
+    glTexCoord2f(1.0f, 1.0f); glVertex2f(x + scaledW, y + scaledH);
+    glTexCoord2f(1.0f, 0.0f); glVertex2f(x + scaledW, y);
     glEnd();
-    
-    // Disable texture and blending
+
     glDisable(GL_TEXTURE_2D);
-    glColor3f(1.0f, 1.0f, 1.0f);
 }
 
 
+
 // Example to help you load texture
-void Renderer::drawCurrentWeapon() {
-    GLuint pistolID = textureManager_.getTextureID(300);  //ID define on Game.cpp
+void Renderer::drawCurrentWeapon(const Player& player) {
+    // 如果玩家没有武器，直接不画
+    if (!player.hasWeapon()) return;
+
+    const Weapon* weapon = player.getWeapon();
+    if (!weapon) return;
+
+    // 先画右下角的小图标（保持你原来的 pistol 图标）
+    GLuint pistolID = textureManager_.getTextureID(300);  //ID 在 Game::loadTextures 里定义
     float pistol_width = RenderConfig::PISTOL_TEXTURE_SIZE;
     float pistol_height = pistol_width;
 
@@ -527,19 +539,33 @@ void Renderer::drawCurrentWeapon() {
 
     glEnable(GL_TEXTURE_2D);
     glBindTexture(GL_TEXTURE_2D, pistolID);
-    glColor4f(1.0f, 1.0f, 1.0f, 1.0f); 
-
+    glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
 
     glBegin(GL_QUADS);
-        glTexCoord2f(0.0f, 0.0f); glVertex2f(draw_x, draw_y);
-        glTexCoord2f(0.0f, 1.0f); glVertex2f(draw_x, draw_y + pistol_height);
-        glTexCoord2f(1.0f, 1.0f); glVertex2f(draw_x + pistol_width, draw_y + pistol_height);
-        glTexCoord2f(1.0f, 0.0f); glVertex2f(draw_x + pistol_width, draw_y);
-    glEnd();                                            
+    glTexCoord2f(0.0f, 0.0f); glVertex2f(draw_x, draw_y);
+    glTexCoord2f(0.0f, 1.0f); glVertex2f(draw_x, draw_y + pistol_height);
+    glTexCoord2f(1.0f, 1.0f); glVertex2f(draw_x + pistol_width, draw_y + pistol_height);
+    glTexCoord2f(1.0f, 0.0f); glVertex2f(draw_x + pistol_width, draw_y);
+    glEnd();
 
     glDisable(GL_TEXTURE_2D);
     glColor3f(1.0f, 1.0f, 1.0f);
+
+    // 再画文字：当前水果类型 + 切换提示
+    std::string weaponName;
+    switch (weapon->getFruitType()) {
+    case FruitType::Watermelon: weaponName = "Watermelon (Hippo)"; break;
+    case FruitType::Bamboo:     weaponName = "Bamboo (Panda)"; break;
+    case FruitType::Banana:     weaponName = "Banana (Monkey)"; break;
+    }
+
+    std::string text = "Current Weapon: " + weaponName + "  [1/2/3 Switch]";
+    int textX = static_cast<int>(draw_x) - 260;  // 大概在图标左侧，自己可以微调
+    int textY = static_cast<int>(draw_y + pistol_height / 2);
+
+    drawText(textX, textY, text);
 }
+
 
 void Renderer::present() {
     glutSwapBuffers();

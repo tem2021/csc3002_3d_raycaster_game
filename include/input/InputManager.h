@@ -21,7 +21,8 @@ public:
     float consumeMouseDelta();
     bool shouldShowInfo() const { return showInfo_; }
     bool shouldExit() const { return exitRequested_; }
-    
+    bool consumeFireClick();
+
 private:
     std::array<bool, 256> keyStates_;
     float mouseDeltaX_;
@@ -32,6 +33,7 @@ private:
     bool sprintPressed_;
     bool firePressed_;
     bool reloadPressed_;
+    bool fireClicked_;
 
     // use to normalize 'a' and 'A' to 'a'
     unsigned char normalizeKey(unsigned char key) const;   
