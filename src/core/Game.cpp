@@ -337,6 +337,19 @@ void Game::update() {
             e.markCountedAsKill();
         }
     }
+
+    // if player died
+    if (!gameOver_ && player_->getHealth() <= 0) {
+        gameOver_ = true;
+        return;
+    }
+
+    // if game is over, stop gameplay updates
+    if (gameOver_) {
+        handleGameOverState();
+        return;
+    }
+
 }
 
 // Game.cpp
@@ -480,6 +493,12 @@ void Game::render() {
 
     // render player HUD
     renderer_->drawHUD(*player_);
+
+     if (gameOver_) {
+        renderer_->renderGameOverOverlay(*player_);
+        renderer_->present();
+        return;
+    }
     
     renderer_->present();
 }
@@ -585,4 +604,19 @@ std::vector<Vec2> Game::findDistributedSpawnPoints(unsigned int count)
     }
 
     return result;
+}
+
+void Game::handleGameOverState()
+{
+    // Quit game
+    if (inputManager_->shouldExit()) {
+        return;
+    }
+
+    // Restart game
+    if (inputManager_->isKeyPressed(static_cast<unsigned char>(13))) {
+        init();
+        gameOver_ = false;
+        return;
+    }
 }

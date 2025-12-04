@@ -11,7 +11,6 @@ InputManager::InputManager(int centerX, int centerY)
     keyStates_.fill(false);
 }
 
-
 unsigned char InputManager::normalizeKey(unsigned char key) const {
     if (key >= 'A' && key <= 'Z') return key + ('a' - 'A'); 
     return key; 
@@ -78,7 +77,6 @@ void InputManager::handleMouseButton(int button, int state, int, int) {
         }
     }
 }
-
 
 bool InputManager::consumeReloadPress() {
     bool pressed = reloadPressed_;
