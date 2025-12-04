@@ -180,6 +180,11 @@ void Game::loadTextures() {
 }
 
 void Game::handleInput() {
+    if (gameOver_) {        
+        handleGameOverState();
+        return;
+    }
+
     processPlayerInput();
     processWeaponInput();
 }
@@ -261,6 +266,18 @@ void Game::processPlayerInput() {
 }
 
 void Game::update() {
+    // if player died
+    if (!gameOver_ && player_->getHealth() <= 0) {
+        gameOver_ = true;
+        return;
+    }
+
+    // if game is over, stop gameplay updates
+    if (gameOver_) {
+        handleGameOverState();
+        return;
+    }
+
     // Update weapon cooldown
     if (player_->getWeapon()) {
         player_->getWeapon()->update(deltaTime_);
@@ -337,19 +354,6 @@ void Game::update() {
             e.markCountedAsKill();
         }
     }
-
-    // if player died
-    if (!gameOver_ && player_->getHealth() <= 0) {
-        gameOver_ = true;
-        return;
-    }
-
-    // if game is over, stop gameplay updates
-    if (gameOver_) {
-        handleGameOverState();
-        return;
-    }
-
 }
 
 // Game.cpp
@@ -606,8 +610,7 @@ std::vector<Vec2> Game::findDistributedSpawnPoints(unsigned int count)
     return result;
 }
 
-void Game::handleGameOverState()
-{
+void Game::handleGameOverState() {
     // Quit game
     if (inputManager_->shouldExit()) {
         return;
@@ -616,7 +619,6 @@ void Game::handleGameOverState()
     // Restart game
     if (inputManager_->isKeyPressed(static_cast<unsigned char>(13))) {
         init();
-        gameOver_ = false;
-        return;
+        gameOver_ = false;        
     }
 }
