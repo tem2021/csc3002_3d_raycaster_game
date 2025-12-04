@@ -28,11 +28,23 @@ left mouse button: fire weapon
 
 r: reload weapon
 
+1: watermelon (for hippo)
+
+2: bamboo (for panda)
+
+3: banana (for monkey)
+
 i: toggle debug info
+
+escape key: quit game (can use any time)
+
+enter key: restart game (can only use when game is over)
 
 ## Credits
 
 - [@tem2021](https://github.com/tem2021) - Map design team
 - [@prae-mai](https://github.com/prae-mai) - Map design team
 - [@Julia047](https://github.com/Julia047) - Enemy design team
-- [@QianBeiDeWangBa2157](https://github.com/QianBeiDeWangBa2157) - Weapon design team
+- [@QianBeiDeWangBa2157](https://github.com/QianBeiDeWangBa2157) - Enemy design team
+- [@lis-shhjd](https://github.com/lis-shhjd) - Weapon design team
+- [@luoyuanhao2157](https://github.com/luoyuanhao2157) - Weapon design team
