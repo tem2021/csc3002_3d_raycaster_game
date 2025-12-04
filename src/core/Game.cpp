@@ -77,7 +77,8 @@ void Game::init() {
         map_->getInitPosition(),
         0.0f,  // initial angle
         moveSpeed,
-        health
+        health,
+        0 // initial amount of kills
     );
     
     // create the raycaster instance
@@ -118,8 +119,6 @@ void Game::init() {
 
         enemies_.push_back(Enemy(pos, speed, type));
     }
-
-
 
     // Load all textures
     loadTextures();
@@ -185,7 +184,6 @@ void Game::handleInput() {
     processWeaponInput();
 }
 
-
 // 判断某种水果是不是喂对了这只动物
 static bool isCorrectFruitForEnemy(FruitType fruit, Enemy::EnemyType type) {
     switch (type) {
@@ -198,7 +196,6 @@ static bool isCorrectFruitForEnemy(FruitType fruit, Enemy::EnemyType type) {
     }
     return false;
 }
-
 
 // =====================
 // helper: 找最近的敌人
@@ -332,9 +329,13 @@ void Game::update() {
             }
         }
 
-
         // 冷却计时递减
         if (e.attackCooldownFrames_ > 0) e.attackCooldownFrames_--;
+
+        if (!e.isAlive() && !e.wasCountedAsKill()) {
+            player_->incrementKills();
+            e.markCountedAsKill();
+        }
     }
 }
 
@@ -451,8 +452,6 @@ Enemy* Game::detectEnemyHit() {
 
     return hitEnemy; // 可能为 nullptr（没打中）
 }
-
-
 
 void Game::render() {
     renderer_->clear();

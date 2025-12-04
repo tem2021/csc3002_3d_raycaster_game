@@ -267,16 +267,20 @@ void Renderer::drawDebugInfo(const Player& player, bool show) {
     drawText(10, startY, oss.str());
 
     oss.str("");
-    oss << "Angle: " << std::fixed << std::setprecision(2) << player.getAngle();
+    oss << "Kills: " << player.getKills();
     drawText(10, startY + 20, oss.str());
-    
+
     oss.str("");
-    oss << "Pos X: " << std::fixed << std::setprecision(2) << player.getPosition().x;
+    oss << "Angle: " << std::fixed << std::setprecision(2) << player.getAngle();
     drawText(10, startY + 40, oss.str());
     
     oss.str("");
-    oss << "Pos Y: " << std::fixed << std::setprecision(2) << player.getPosition().y;
+    oss << "Pos X: " << std::fixed << std::setprecision(2) << player.getPosition().x;
     drawText(10, startY + 60, oss.str());
+    
+    oss.str("");
+    oss << "Pos Y: " << std::fixed << std::setprecision(2) << player.getPosition().y;
+    drawText(10, startY + 80, oss.str());
 }
 
 void Renderer::drawHealthBar(const Player& player) {

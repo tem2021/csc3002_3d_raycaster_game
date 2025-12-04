@@ -9,7 +9,7 @@ class Weapon;  // Forward declaration
 
 class Player {
 public:
-    Player(const Vec2& position, float angle, float moveSpeed, int health);
+    Player(const Vec2& position, float angle, float moveSpeed, int health, int kills);
     ~Player();  // Destructor needed for unique_ptr<Weapon>
     
     // Movement
@@ -28,6 +28,10 @@ public:
     int getHealth() const { return health_; }
     void takeDamage(int amount) { health_ -= amount; if (health_ < 0) health_ = 0; }
     
+    int getKills() const { return kills_; }
+    void incrementKills() { kills_++; }
+    void resetKills();
+
     // Weapon state management
     bool hasWeapon() const { return hasWeapon_; }
     void equipWeapon() { hasWeapon_ = true; }
@@ -48,6 +52,7 @@ private:
     float moveSpeed_;
 
     int health_;
+    int kills_;
     bool hasWeapon_;  // 玩家是否持有武器
     std::unique_ptr<Weapon> weapon_;  // 武器指针
     
