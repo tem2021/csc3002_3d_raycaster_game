@@ -26,6 +26,8 @@ public:
     bool shouldExit() const;
     
 private:
+    bool gameOver_ = false;
+    void handleGameOverState();
     
     //Owning pointers to core components
     std::unique_ptr<Player> player_;

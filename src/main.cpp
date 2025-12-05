@@ -85,15 +85,14 @@ int main(int argc, char* argv[]) {
     // Set OpenGL
     glClearColor(0.3f, 0.3f, 0.3f, 0.0f);
 
-    // ÉèÖÃÍ¶Ó°¾ØÕó£ºÓÃ´°¿Ú¿í¸ß×÷Îª×ø±ê·¶Î§
+    // ï¿½ï¿½ï¿½ï¿½Í¶Ó°ï¿½ï¿½ï¿½ï¿½ï¿½Ã´ï¿½ï¿½Ú¿ï¿½ï¿½ï¿½ï¿½ï¿½Îªï¿½ï¿½ï¿½ê·¶Î§
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
     gluOrtho2D(0, GameConfig::WINDOW_WIDTH, GameConfig::WINDOW_HEIGHT, 0);
 
-    // »Øµ½Ä£ÐÍ¾ØÕó
+    // ï¿½Øµï¿½Ä£ï¿½Í¾ï¿½ï¿½ï¿½
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
-
     
     // Hide Cursor
     glutSetCursor(GLUT_CURSOR_NONE);

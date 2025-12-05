@@ -92,6 +92,9 @@ public:
     void resetCorrectFeedCount() { correctFeedCount_ = 0; }
     void incrementCorrectFeedCount() { ++correctFeedCount_; }
 
+    bool wasCountedAsKill() const { return countedAsKill_; }
+    void markCountedAsKill() { countedAsKill_ = true; }
+
 private:
     EnemyType type_;       // 物种
     Vec2 position_;
@@ -111,6 +114,8 @@ private:
     // 情绪系统
     EmotionState state_ = EmotionState::Normal;
     int stateFramesRemaining_ = 0;   // 剩余帧数
+
+    bool countedAsKill_ = false;
 
 };
 #endif

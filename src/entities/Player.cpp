@@ -3,9 +3,9 @@
 #include "core/Config.h"
 #include <cmath>
 
-Player::Player(const Vec2& position, float angle, float moveSpeed, int health)
+Player::Player(const Vec2& position, float angle, float moveSpeed, int health, int kills)
     : position_(position), angle_(angle), moveSpeed_(moveSpeed),
-    health_(health), hasWeapon_(true) 
+    health_(health), kills_(kills), hasWeapon_(true)
 {
     updateDirection();
     weapon_ = std::make_unique<Weapon>();
@@ -77,4 +77,8 @@ void Player::reloadWeapon() {
     if (weapon_) {
         weapon_->reload();
     }
+}
+
+void Player::resetKills() {
+    kills_ = 0;
 }

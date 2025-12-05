@@ -25,6 +25,8 @@ public:
     void drawDebugInfo(const Player& player, bool show);
     void drawWeaponSprite(const Player& player);
     void present();
+
+    void renderGameOverOverlay(const Player& player);
     
     TextureManager& getTextureManager() { return textureManager_; }
     

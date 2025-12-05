@@ -267,16 +267,20 @@ void Renderer::drawDebugInfo(const Player& player, bool show) {
     drawText(10, startY, oss.str());
 
     oss.str("");
-    oss << "Angle: " << std::fixed << std::setprecision(2) << player.getAngle();
+    oss << "Kills: " << player.getKills();
     drawText(10, startY + 20, oss.str());
-    
+
     oss.str("");
-    oss << "Pos X: " << std::fixed << std::setprecision(2) << player.getPosition().x;
+    oss << "Angle: " << std::fixed << std::setprecision(2) << player.getAngle();
     drawText(10, startY + 40, oss.str());
     
     oss.str("");
-    oss << "Pos Y: " << std::fixed << std::setprecision(2) << player.getPosition().y;
+    oss << "Pos X: " << std::fixed << std::setprecision(2) << player.getPosition().x;
     drawText(10, startY + 60, oss.str());
+    
+    oss.str("");
+    oss << "Pos Y: " << std::fixed << std::setprecision(2) << player.getPosition().y;
+    drawText(10, startY + 80, oss.str());
 }
 
 void Renderer::drawHealthBar(const Player& player) {
@@ -519,8 +523,6 @@ void Renderer::drawWeaponSprite(const Player& player) {
     glDisable(GL_TEXTURE_2D);
 }
 
-
-
 // Example to help you load texture
 void Renderer::drawCurrentWeapon(const Player& player) {
     // 如果玩家没有武器，直接不画
@@ -569,4 +571,47 @@ void Renderer::drawCurrentWeapon(const Player& player) {
 
 void Renderer::present() {
     glutSwapBuffers();
+}
+
+void Renderer::renderGameOverOverlay(const Player& player) {
+    // Save state
+    glPushAttrib(GL_ALL_ATTRIB_BITS);
+    glPushMatrix();
+
+    // Dim fullscreen rectangle (semi-transparent gray)
+    glDisable(GL_TEXTURE_2D);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+    // dark gray with 70% opacity
+    glColor4f(0.15f, 0.15f, 0.15f, 0.7f);
+
+    glBegin(GL_QUADS);
+        glVertex2f(0.0f, 0.0f);
+        glVertex2f(static_cast<float>(screenWidth_), 0.0f);
+        glVertex2f(static_cast<float>(screenWidth_), static_cast<float>(screenHeight_));
+        glVertex2f(0.0f, static_cast<float>(screenHeight_));
+    glEnd();
+
+    glColor4f(1, 1, 1, 1); // reset text color
+    
+    std::string title = "GAME OVER";
+    std::string kills = "Kills: " + std::to_string(player.getKills());
+    std::string prompt = "Press ENTER to restart  |  ESC to exit";
+
+    auto centerXFor = [&](const std::string& s) -> int {
+        int approxCharWidth = 8;
+        int w = static_cast<int>(s.size()) * approxCharWidth;
+        return (screenWidth_ / 2) - (w / 2);
+    };
+
+    int centerY = screenHeight_ / 2;
+
+    drawText(centerXFor(title), centerY - 60, title);
+    drawText(centerXFor(kills), centerY - 10, kills);
+    drawText(centerXFor(prompt), centerY + 40, prompt);
+    
+    // Restore GL state
+    glPopMatrix();
+    glPopAttrib();
 }

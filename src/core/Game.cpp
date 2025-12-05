@@ -77,7 +77,8 @@ void Game::init() {
         map_->getInitPosition(),
         0.0f,  // initial angle
         moveSpeed,
-        health
+        health,
+        0 // initial amount of kills
     );
     
     // create the raycaster instance
@@ -118,8 +119,6 @@ void Game::init() {
 
         enemies_.push_back(Enemy(pos, speed, type));
     }
-
-
 
     // Load all textures
     loadTextures();
@@ -181,10 +180,14 @@ void Game::loadTextures() {
 }
 
 void Game::handleInput() {
+    if (gameOver_) {        
+        handleGameOverState();
+        return;
+    }
+
     processPlayerInput();
     processWeaponInput();
 }
-
 
 // 判断某种水果是不是喂对了这只动物
 static bool isCorrectFruitForEnemy(FruitType fruit, Enemy::EnemyType type) {
@@ -198,7 +201,6 @@ static bool isCorrectFruitForEnemy(FruitType fruit, Enemy::EnemyType type) {
     }
     return false;
 }
-
 
 // =====================
 // helper: 找最近的敌人
@@ -264,6 +266,18 @@ void Game::processPlayerInput() {
 }
 
 void Game::update() {
+    // if player died
+    if (!gameOver_ && player_->getHealth() <= 0) {
+        gameOver_ = true;
+        return;
+    }
+
+    // if game is over, stop gameplay updates
+    if (gameOver_) {
+        handleGameOverState();
+        return;
+    }
+
     // Update weapon cooldown
     if (player_->getWeapon()) {
         player_->getWeapon()->update(deltaTime_);
@@ -332,9 +346,13 @@ void Game::update() {
             }
         }
 
-
         // 冷却计时递减
         if (e.attackCooldownFrames_ > 0) e.attackCooldownFrames_--;
+
+        if (!e.isAlive() && !e.wasCountedAsKill()) {
+            player_->incrementKills();
+            e.markCountedAsKill();
+        }
     }
 }
 
@@ -452,8 +470,6 @@ Enemy* Game::detectEnemyHit() {
     return hitEnemy; // 可能为 nullptr（没打中）
 }
 
-
-
 void Game::render() {
     renderer_->clear();
     
@@ -481,6 +497,12 @@ void Game::render() {
 
     // render player HUD
     renderer_->drawHUD(*player_);
+
+     if (gameOver_) {
+        renderer_->renderGameOverOverlay(*player_);
+        renderer_->present();
+        return;
+    }
     
     renderer_->present();
 }
@@ -586,4 +608,17 @@ std::vector<Vec2> Game::findDistributedSpawnPoints(unsigned int count)
     }
 
     return result;
+}
+
+void Game::handleGameOverState() {
+    // Quit game
+    if (inputManager_->shouldExit()) {
+        return;
+    }
+
+    // Restart game
+    if (inputManager_->isKeyPressed(static_cast<unsigned char>(13))) {
+        init();
+        gameOver_ = false;        
+    }
 }
