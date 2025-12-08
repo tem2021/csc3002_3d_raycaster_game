@@ -55,6 +55,8 @@
 Game::Game() : screenWidth_(0), screenHeight_(0), deltaTime_(0.0166667f) {}
 
 void Game::init() {
+    state_ = State::START_SCREEN;
+
     // gain the size of the screen
     screenWidth_ = GameConfig::WINDOW_WIDTH;
     screenHeight_ = GameConfig::WINDOW_HEIGHT;
@@ -472,6 +474,12 @@ Enemy* Game::detectEnemyHit() {
 
 void Game::render() {
     renderer_->clear();
+    
+    if (state_ == State::START_SCREEN) {
+        renderer_->drawStartScreen();
+        renderer_->present();
+        return;
+    }
     
     // casting rays
     auto rayHits = raycaster_->castRays(

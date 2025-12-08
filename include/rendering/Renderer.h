@@ -24,6 +24,7 @@ public:
     void drawHUD(const Player& player);
     void drawDebugInfo(const Player& player, bool show);
     void drawWeaponSprite(const Player& player);
+    void drawStartScreen();
     void present();
 
     void renderGameOverOverlay(const Player& player);
