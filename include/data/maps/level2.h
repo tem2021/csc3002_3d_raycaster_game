@@ -1,13 +1,13 @@
-#ifndef LEVEL1_H
-#define LEVEL1_H
+#ifndef LEVEL2_H
+#define LEVEL2_H
 
 namespace MapData {
-    constexpr int LEVEL1_WIDTH = 64;
-    constexpr int LEVEL1_HEIGHT = 64;
-    constexpr int LEVEL1_INIT_X = 2;
-    constexpr int LEVEL1_INIT_Y = 10;
+    constexpr int LEVEL2_WIDTH = 64;
+    constexpr int LEVEL2_HEIGHT = 64;
+    constexpr int LEVEL2_INIT_X = 2;
+    constexpr int LEVEL2_INIT_Y = 10;
 
-    static int LEVEL1[LEVEL1_HEIGHT][LEVEL1_WIDTH] = {
+    static int LEVEL2[LEVEL2_HEIGHT][LEVEL2_WIDTH] = {
         {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
         {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1},
         {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1},

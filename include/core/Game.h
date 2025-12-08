@@ -28,6 +28,12 @@ public:
 private:
     bool gameOver_ = false;
     void handleGameOverState();
+    
+    bool mainMenu_ = true;
+    void handleMainMenuState();
+
+    bool gamePause_ = false;
+    void handleGamePauseState();
 
     enum class State {
         START_SCREEN,
@@ -36,6 +42,8 @@ private:
     };
     
     State state_;
+
+    int currentLevel_;
     
     //Owning pointers to core components
     std::unique_ptr<Player> player_;

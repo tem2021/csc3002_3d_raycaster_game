@@ -3,6 +3,8 @@
 #include "entities/Weapon.h"
 #include "entities/Enemy.h"
 #include "data/maps/level1.h"
+#include "data/maps/level2.h"
+#include "data/maps/level3.h"
 #include <cmath>
 #include <random>
 #include <algorithm> 
@@ -60,17 +62,74 @@ void Game::init() {
     // gain the size of the screen
     screenWidth_ = GameConfig::WINDOW_WIDTH;
     screenHeight_ = GameConfig::WINDOW_HEIGHT;
+
+    currentLevel_ = GameConfig::DEFAULT_LEVEL;
+
+    
+    
     
     // create the map
-    int tileSize = screenHeight_ / MapData::LEVEL1_HEIGHT;
-    map_ = std::make_unique<Map>(
-        MapData::LEVEL1,
-        MapData::LEVEL1_WIDTH,
-        MapData::LEVEL1_HEIGHT,
-        MapData::LEVEL1_INIT_X,
-        MapData::LEVEL1_INIT_Y,
-        tileSize
-    );
+    int tileSize = 0;
+
+    switch (currentLevel_) {
+        case 1: {
+            int h = MapData::LEVEL1_HEIGHT;
+            tileSize = screenHeight_ / h;
+            map_ = std::make_unique<Map>(
+                MapData::LEVEL1,
+                MapData::LEVEL1_WIDTH,
+                h,
+                MapData::LEVEL1_INIT_X,
+                MapData::LEVEL1_INIT_Y,
+                tileSize
+            );
+            break;
+        }
+
+        case 2: {
+            int h = MapData::LEVEL2_HEIGHT;
+            tileSize = screenHeight_ / h;
+            map_ = std::make_unique<Map>(
+                MapData::LEVEL2,
+                MapData::LEVEL2_WIDTH,
+                h,
+                MapData::LEVEL2_INIT_X,
+                MapData::LEVEL2_INIT_Y,
+                tileSize
+            );
+            break;
+        }
+
+        case 3: {
+            int h = MapData::LEVEL3_HEIGHT;
+            tileSize = screenHeight_ / h;
+            map_ = std::make_unique<Map>(
+                MapData::LEVEL3,
+                MapData::LEVEL3_WIDTH,
+                h,
+                MapData::LEVEL3_INIT_X,
+                MapData::LEVEL3_INIT_Y,
+                tileSize
+            );
+            break;
+        }
+
+        default: {
+            int h = MapData::LEVEL1_HEIGHT;
+            tileSize = screenHeight_ / h;
+            map_ = std::make_unique<Map>(
+                MapData::LEVEL1,
+                MapData::LEVEL1_WIDTH,
+                h,
+                MapData::LEVEL1_INIT_X,
+                MapData::LEVEL1_INIT_Y,
+                tileSize
+            );
+            break;
+        }
+    }
+    
+    
     
     // create the player
     float moveSpeed = GameConfig::MOVE_SPEED_FACTOR * tileSize;
@@ -182,6 +241,16 @@ void Game::loadTextures() {
 }
 
 void Game::handleInput() {
+    if (mainMenu_) {
+        handleMainMenuState();
+        return;
+    }
+
+    if (gamePause_) {
+        handleGamePauseState();
+        return;
+    }
+    
     if (gameOver_) {        
         handleGameOverState();
         return;
@@ -229,6 +298,11 @@ int getClosestEnemyIndex(const std::vector<Enemy>& enemies, const Player& player
 }
 
 void Game::processPlayerInput() {
+    if (inputManager_->isKeyPressed('p')) {
+        gamePause_ = true;
+        return;
+    }
+
     // whether press shift, use the multiplier on Config.h
     float speedMultiplier = inputManager_->isSprintPressed() ? GameConfig::SPRINT_MULTIPLIER : 1.0f;
 
@@ -277,6 +351,12 @@ void Game::update() {
     // if game is over, stop gameplay updates
     if (gameOver_) {
         handleGameOverState();
+        return;
+    }
+
+    // if game is paused, stop gameplay updates
+    if (gamePause_) {
+        handleGamePauseState();
         return;
     }
 
@@ -506,8 +586,14 @@ void Game::render() {
     // render player HUD
     renderer_->drawHUD(*player_);
 
+    if (gamePause_) {
+        renderer_->drawGamePause(*player_);
+        renderer_->present();
+        return;
+    }
+
      if (gameOver_) {
-        renderer_->renderGameOverOverlay(*player_);
+        renderer_->drawGameOver(*player_);
         renderer_->present();
         return;
     }
@@ -628,5 +714,51 @@ void Game::handleGameOverState() {
     if (inputManager_->isKeyPressed(static_cast<unsigned char>(13))) {
         init();
         gameOver_ = false;        
+    }
+}
+
+void Game::handleMainMenuState() {
+    // Quit game
+    if (inputManager_->shouldExit()) {
+        return;
+    }
+
+    // Pick level 1
+    if (inputManager_->isKeyPressed('1')) {
+        currentLevel_ = 1;
+        init();
+        state_ = State::RUNNING;
+        mainMenu_ = false;
+        return;
+    }
+
+    // Pick level 2
+    if (inputManager_->isKeyPressed('2')) {
+        currentLevel_ = 2;
+        init();
+        state_ = State::RUNNING;
+        mainMenu_ = false;
+        return;
+    }
+
+    // Pick level 3
+    if (inputManager_->isKeyPressed('3')) {
+        currentLevel_ = 3;
+        init();
+        state_ = State::RUNNING;
+        mainMenu_ = false;
+        return;
+    }
+}
+
+void Game::handleGamePauseState() {
+    // Quit game
+    if (inputManager_->shouldExit()) {
+        return;
+    }
+
+    if (inputManager_->isKeyPressed('c')) {
+        state_ = State::RUNNING;
+        gamePause_ = false;
     }
 }

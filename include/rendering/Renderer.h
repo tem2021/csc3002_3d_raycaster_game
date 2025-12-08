@@ -24,10 +24,11 @@ public:
     void drawHUD(const Player& player);
     void drawDebugInfo(const Player& player, bool show);
     void drawWeaponSprite(const Player& player);
-    void drawStartScreen();
     void present();
 
-    void renderGameOverOverlay(const Player& player);
+    void drawStartScreen();
+    void drawGamePause(const Player& player);
+    void drawGameOver(const Player& player);
     
     TextureManager& getTextureManager() { return textureManager_; }
     
