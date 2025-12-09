@@ -38,6 +38,51 @@ void Renderer::clear() {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
+void Renderer::drawStartScreen() {
+    // Save state
+    glPushAttrib(GL_ALL_ATTRIB_BITS);
+    glPushMatrix();
+
+    // Dim fullscreen rectangle (semi-transparent gray)
+    glDisable(GL_TEXTURE_2D);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+    // dark gray with 70% opacity
+    glColor4f(0.15f, 0.15f, 0.15f, 0.7f);
+
+    glBegin(GL_QUADS);
+        glVertex2f(0.0f, 0.0f);
+        glVertex2f(static_cast<float>(screenWidth_), 0.0f);
+        glVertex2f(static_cast<float>(screenWidth_), static_cast<float>(screenHeight_));
+        glVertex2f(0.0f, static_cast<float>(screenHeight_));
+    glEnd();
+
+    glColor4f(1, 1, 1, 1); // reset text color
+    
+    std::string title = "Animal Feeding Game";
+    std::string level = "Press 1, 2, or 3 for each level";    
+
+    auto centerXFor = [&](const std::string& s) -> int {
+        int approxCharWidth = 8;
+        int w = static_cast<int>(s.size()) * approxCharWidth;
+        return (screenWidth_ / 2) - (w / 2);
+    };
+
+    int centerY = screenHeight_ / 2;
+
+    drawText(centerXFor(title), centerY - 60, title);
+    drawText(centerXFor(level), centerY - 10, level);
+    // drawText(centerXFor(prompt), centerY + 40, prompt);
+    
+    // Restore GL state
+    glPopMatrix();
+    glPopAttrib();
+}
+
+
+
+
 void Renderer::draw3DView(const std::vector<RayHit>& rayHits, 
                           const Player& player, const Map& map) {
    
@@ -573,7 +618,7 @@ void Renderer::present() {
     glutSwapBuffers();
 }
 
-void Renderer::renderGameOverOverlay(const Player& player) {
+void Renderer::drawGameWin(const Player& player) {
     // Save state
     glPushAttrib(GL_ALL_ATTRIB_BITS);
     glPushMatrix();
@@ -594,7 +639,93 @@ void Renderer::renderGameOverOverlay(const Player& player) {
     glEnd();
 
     glColor4f(1, 1, 1, 1); // reset text color
-    
+
+    std::string title = "GAME WIN";
+    std::string kills = "Kills: " + std::to_string(player.getKills());
+    std::string prompt = "Press ENTER to restart  |  ESC to exit";
+
+    auto centerXFor = [&](const std::string& s) -> int {
+        int approxCharWidth = 8;
+        int w = static_cast<int>(s.size()) * approxCharWidth;
+        return (screenWidth_ / 2) - (w / 2);
+    };
+
+    int centerY = screenHeight_ / 2;
+
+    drawText(centerXFor(title), centerY - 60, title);
+    drawText(centerXFor(kills), centerY - 10, kills);
+    drawText(centerXFor(prompt), centerY + 40, prompt);
+
+    // Restore GL state
+    glPopMatrix();
+    glPopAttrib();
+}
+
+void Renderer::drawGamePause(const Player& player) {
+    // Save state
+    glPushAttrib(GL_ALL_ATTRIB_BITS);
+    glPushMatrix();
+
+    // Dim fullscreen rectangle (semi-transparent gray)
+    glDisable(GL_TEXTURE_2D);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+    // dark gray with 70% opacity
+    glColor4f(0.15f, 0.15f, 0.15f, 0.7f);
+
+    glBegin(GL_QUADS);
+        glVertex2f(0.0f, 0.0f);
+        glVertex2f(static_cast<float>(screenWidth_), 0.0f);
+        glVertex2f(static_cast<float>(screenWidth_), static_cast<float>(screenHeight_));
+        glVertex2f(0.0f, static_cast<float>(screenHeight_));
+    glEnd();
+
+    glColor4f(1, 1, 1, 1); // reset text color
+
+    std::string title = "GAME PAUSED";
+    std::string kills = "Kills: " + std::to_string(player.getKills());
+    std::string prompt = "Press C to continue  |  ESC to exit";
+
+    auto centerXFor = [&](const std::string& s) -> int {
+        int approxCharWidth = 8;
+        int w = static_cast<int>(s.size()) * approxCharWidth;
+        return (screenWidth_ / 2) - (w / 2);
+    };
+
+    int centerY = screenHeight_ / 2;
+
+    drawText(centerXFor(title), centerY - 60, title);
+    drawText(centerXFor(kills), centerY - 10, kills);
+    drawText(centerXFor(prompt), centerY + 40, prompt);
+
+    // Restore GL state
+    glPopMatrix();
+    glPopAttrib();
+}
+
+void Renderer::drawGameOver(const Player& player) {
+    // Save state
+    glPushAttrib(GL_ALL_ATTRIB_BITS);
+    glPushMatrix();
+
+    // Dim fullscreen rectangle (semi-transparent gray)
+    glDisable(GL_TEXTURE_2D);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+    // dark gray with 70% opacity
+    glColor4f(0.15f, 0.15f, 0.15f, 0.7f);
+
+    glBegin(GL_QUADS);
+        glVertex2f(0.0f, 0.0f);
+        glVertex2f(static_cast<float>(screenWidth_), 0.0f);
+        glVertex2f(static_cast<float>(screenWidth_), static_cast<float>(screenHeight_));
+        glVertex2f(0.0f, static_cast<float>(screenHeight_));
+    glEnd();
+
+    glColor4f(1, 1, 1, 1); // reset text color
+
     std::string title = "GAME OVER";
     std::string kills = "Kills: " + std::to_string(player.getKills());
     std::string prompt = "Press ENTER to restart  |  ESC to exit";
@@ -610,7 +741,7 @@ void Renderer::renderGameOverOverlay(const Player& player) {
     drawText(centerXFor(title), centerY - 60, title);
     drawText(centerXFor(kills), centerY - 10, kills);
     drawText(centerXFor(prompt), centerY + 40, prompt);
-    
+
     // Restore GL state
     glPopMatrix();
     glPopAttrib();

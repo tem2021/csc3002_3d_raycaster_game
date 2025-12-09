@@ -1,4 +1,4 @@
-# 3D Raycaster Game (we don't have a name for it yet)
+# Animal Feeding 3D Raycaster Game
 
 _A game where you feed hungry animals_
 
@@ -37,6 +37,10 @@ r: reload weapon
 i: toggle debug info
 
 escape key: quit game (can use any time)
+
+p: pause game (can use any time)
+
+c: continue game (can only use when game is paused)
 
 enter key: restart game (can only use when game is over)
 

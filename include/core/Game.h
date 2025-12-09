@@ -26,8 +26,21 @@ public:
     bool shouldExit() const;
     
 private:
-    bool gameOver_ = false;
     void handleGameOverState();
+    void handleMainMenuState();
+    void handleGamePauseState();
+
+    enum class State {
+        START_SCREEN,
+        GAME_RUNNING,
+        GAME_OVER,
+        GAME_PAUSED,
+        GAME_WIN
+    };
+    
+    State state_;
+
+    int currentLevel_;
     
     //Owning pointers to core components
     std::unique_ptr<Player> player_;
@@ -46,6 +59,7 @@ private:
     void handleWeaponFire();
     Vec2 findFreeSpawnPoint();
     Enemy* detectEnemyHit();
+    int getEnemiesRemaining() const;
 };
 
 #endif // GAME_H

@@ -3,6 +3,8 @@
 #include "entities/Weapon.h"
 #include "entities/Enemy.h"
 #include "data/maps/level1.h"
+#include "data/maps/level2.h"
+#include "data/maps/level3.h"
 #include <cmath>
 #include <random>
 #include <algorithm> 
@@ -38,7 +40,6 @@
 #include "data/textures/Banana_idle.h"
 #include "data/textures/Banana_throw.h"
 
-
 #include "rendering/TextureManager.h"
 
 #include <GL/freeglut_std.h>
@@ -55,21 +56,80 @@
 Game::Game() : screenWidth_(0), screenHeight_(0), deltaTime_(0.0166667f) {}
 
 void Game::init() {
+    state_ = State::START_SCREEN;
+
     // gain the size of the screen
     screenWidth_ = GameConfig::WINDOW_WIDTH;
     screenHeight_ = GameConfig::WINDOW_HEIGHT;
     
     // create the map
-    int tileSize = screenHeight_ / MapData::LEVEL1_HEIGHT;
-    map_ = std::make_unique<Map>(
-        MapData::LEVEL1,
-        MapData::LEVEL1_WIDTH,
-        MapData::LEVEL1_HEIGHT,
-        MapData::LEVEL1_INIT_X,
-        MapData::LEVEL1_INIT_Y,
-        tileSize
-    );
-    
+    int tileSize = 0;
+
+    // default enemy count
+    int enemyCount = 20;    // 新的全地图均匀生成40个
+
+    switch (currentLevel_) {
+        case 1: {
+            int h = MapData::LEVEL1_HEIGHT;
+            tileSize = screenHeight_ / h;
+            map_ = std::make_unique<Map>(
+                MapData::LEVEL1,
+                MapData::LEVEL1_WIDTH,
+                h,
+                MapData::LEVEL1_INIT_X,
+                MapData::LEVEL1_INIT_Y,
+                tileSize
+            );
+            enemyCount = MapData::LEVEL1_ENEMY_AMOUNT;
+            break;
+        }
+
+        case 2: {
+            int h = MapData::LEVEL2_HEIGHT;
+            tileSize = screenHeight_ / h;
+            map_ = std::make_unique<Map>(
+                MapData::LEVEL2,
+                MapData::LEVEL2_WIDTH,
+                h,
+                MapData::LEVEL2_INIT_X,
+                MapData::LEVEL2_INIT_Y,
+                tileSize
+            );
+            enemyCount = MapData::LEVEL2_ENEMY_AMOUNT;
+            break;
+        }
+
+        case 3: {
+            int h = MapData::LEVEL3_HEIGHT;
+            tileSize = screenHeight_ / h;
+            map_ = std::make_unique<Map>(
+                MapData::LEVEL3,
+                MapData::LEVEL3_WIDTH,
+                h,
+                MapData::LEVEL3_INIT_X,
+                MapData::LEVEL3_INIT_Y,
+                tileSize
+            );
+            enemyCount = MapData::LEVEL3_ENEMY_AMOUNT;
+            break;
+        }
+
+        default: {
+            int h = MapData::LEVEL1_HEIGHT;
+            tileSize = screenHeight_ / h;
+            map_ = std::make_unique<Map>(
+                MapData::LEVEL1,
+                MapData::LEVEL1_WIDTH,
+                h,
+                MapData::LEVEL1_INIT_X,
+                MapData::LEVEL1_INIT_Y,
+                tileSize
+            );
+            enemyCount = MapData::LEVEL1_ENEMY_AMOUNT;
+            break;
+        }
+    }
+        
     // create the player
     float moveSpeed = GameConfig::MOVE_SPEED_FACTOR * tileSize;
     int health = PlayerConfig::MAX_HEALTH;
@@ -92,14 +152,12 @@ void Game::init() {
         screenWidth_ / 2,
         screenHeight_ / 2
     );
+    
     // --- init enemies ---
-    enemies_.clear();
-
-    int enemyCount = 20;    // 新的全地图均匀生成40个
+    enemies_.clear();    
     auto spawnPoints = findDistributedSpawnPoints(enemyCount);
 
     for (auto& pos : spawnPoints) {
-
         int r = rand() % 3;
         Enemy::EnemyType type;
         float speed;
@@ -180,7 +238,17 @@ void Game::loadTextures() {
 }
 
 void Game::handleInput() {
-    if (gameOver_) {        
+    if (state_ == State::START_SCREEN) {
+        handleMainMenuState();
+        return;
+    }
+
+    if (state_ == State::GAME_PAUSED) {
+        handleGamePauseState();
+        return;
+    }
+    
+    if (state_ == State::GAME_OVER || state_ == State::GAME_WIN) {
         handleGameOverState();
         return;
     }
@@ -227,6 +295,11 @@ int getClosestEnemyIndex(const std::vector<Enemy>& enemies, const Player& player
 }
 
 void Game::processPlayerInput() {
+    if (inputManager_->isKeyPressed('p')) {
+        state_ = State::GAME_PAUSED;
+        return;
+    }
+
     // whether press shift, use the multiplier on Config.h
     float speedMultiplier = inputManager_->isSprintPressed() ? GameConfig::SPRINT_MULTIPLIER : 1.0f;
 
@@ -267,14 +340,20 @@ void Game::processPlayerInput() {
 
 void Game::update() {
     // if player died
-    if (!gameOver_ && player_->getHealth() <= 0) {
-        gameOver_ = true;
+    if ((state_ != State::GAME_OVER) && player_->getHealth() <= 0) {
+        state_ = State::GAME_OVER;
         return;
     }
 
-    // if game is over, stop gameplay updates
-    if (gameOver_) {
+    // if game is over or player has won, stop gameplay updates
+    if (state_ == State::GAME_OVER || state_ == State::GAME_WIN) {
         handleGameOverState();
+        return;
+    }
+
+    // if game is paused, stop gameplay updates
+    if (state_ == State::GAME_PAUSED) {
+        handleGamePauseState();
         return;
     }
 
@@ -354,9 +433,13 @@ void Game::update() {
             e.markCountedAsKill();
         }
     }
-}
 
-// Game.cpp
+    // if all enemies are gone, player wins
+    if (getEnemiesRemaining() == 0) {
+        state_ = State::GAME_WIN;
+        return;
+    }
+}
 
 void Game::processWeaponInput() {
     // Handle weapon firing
@@ -473,6 +556,12 @@ Enemy* Game::detectEnemyHit() {
 void Game::render() {
     renderer_->clear();
     
+    if (state_ == State::START_SCREEN) {
+        renderer_->drawStartScreen();
+        renderer_->present();
+        return;
+    }
+    
     // casting rays
     auto rayHits = raycaster_->castRays(
         player_->getPosition(),
@@ -498,8 +587,20 @@ void Game::render() {
     // render player HUD
     renderer_->drawHUD(*player_);
 
-     if (gameOver_) {
-        renderer_->renderGameOverOverlay(*player_);
+    if (state_ == State::GAME_WIN) {
+        renderer_->drawGameWin(*player_);
+        renderer_->present();
+        return;
+    }
+
+    if (state_ == State::GAME_PAUSED) {
+        renderer_->drawGamePause(*player_);
+        renderer_->present();
+        return;
+    }
+
+     if (state_ == State::GAME_OVER) {
+        renderer_->drawGameOver(*player_);
         renderer_->present();
         return;
     }
@@ -610,6 +711,16 @@ std::vector<Vec2> Game::findDistributedSpawnPoints(unsigned int count)
     return result;
 }
 
+int Game::getEnemiesRemaining() const {
+    int count = 0;
+    for (const auto& e : enemies_) {
+        if (e.isAlive()) {
+            count++;
+        }
+    }
+    return count;
+}
+
 void Game::handleGameOverState() {
     // Quit game
     if (inputManager_->shouldExit()) {
@@ -619,6 +730,48 @@ void Game::handleGameOverState() {
     // Restart game
     if (inputManager_->isKeyPressed(static_cast<unsigned char>(13))) {
         init();
-        gameOver_ = false;        
+        state_ = State::START_SCREEN;
+    }
+}
+
+void Game::handleMainMenuState() {
+    // Quit game
+    if (inputManager_->shouldExit()) {
+        return;
+    }
+
+    // Pick level 1
+    if (inputManager_->isKeyPressed('1')) {
+        currentLevel_ = 1;
+        init();
+        state_ = State::GAME_RUNNING;
+        return;
+    }
+
+    // Pick level 2
+    if (inputManager_->isKeyPressed('2')) {
+        currentLevel_ = 2;
+        init();
+        state_ = State::GAME_RUNNING;
+        return;
+    }
+
+    // Pick level 3
+    if (inputManager_->isKeyPressed('3')) {
+        currentLevel_ = 3;
+        init();
+        state_ = State::GAME_RUNNING;
+        return;
+    }
+}
+
+void Game::handleGamePauseState() {
+    // Quit game
+    if (inputManager_->shouldExit()) {
+        return;
+    }
+
+    if (inputManager_->isKeyPressed('c')) {
+        state_ = State::GAME_RUNNING;
     }
 }

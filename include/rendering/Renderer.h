@@ -26,7 +26,10 @@ public:
     void drawWeaponSprite(const Player& player);
     void present();
 
-    void renderGameOverOverlay(const Player& player);
+    void drawStartScreen();
+    void drawGameWin(const Player& player);
+    void drawGamePause(const Player& player);
+    void drawGameOver(const Player& player);
     
     TextureManager& getTextureManager() { return textureManager_; }
     
