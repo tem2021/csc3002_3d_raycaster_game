@@ -27,6 +27,7 @@ public:
     void present();
 
     void drawStartScreen();
+    void drawGameWin(const Player& player);
     void drawGamePause(const Player& player);
     void drawGameOver(const Player& player);
     

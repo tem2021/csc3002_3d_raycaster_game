@@ -26,19 +26,16 @@ public:
     bool shouldExit() const;
     
 private:
-    bool gameOver_ = false;
     void handleGameOverState();
-    
-    bool mainMenu_ = true;
     void handleMainMenuState();
-
-    bool gamePause_ = false;
     void handleGamePauseState();
 
     enum class State {
         START_SCREEN,
-        RUNNING,
-        PAUSED
+        GAME_RUNNING,
+        GAME_OVER,
+        GAME_PAUSED,
+        GAME_WIN
     };
     
     State state_;
@@ -62,6 +59,7 @@ private:
     void handleWeaponFire();
     Vec2 findFreeSpawnPoint();
     Enemy* detectEnemyHit();
+    int getEnemiesRemaining() const;
 };
 
 #endif // GAME_H

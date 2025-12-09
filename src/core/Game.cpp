@@ -40,7 +40,6 @@
 #include "data/textures/Banana_idle.h"
 #include "data/textures/Banana_throw.h"
 
-
 #include "rendering/TextureManager.h"
 
 #include <GL/freeglut_std.h>
@@ -239,17 +238,17 @@ void Game::loadTextures() {
 }
 
 void Game::handleInput() {
-    if (mainMenu_) {
+    if (state_ == State::START_SCREEN) {
         handleMainMenuState();
         return;
     }
 
-    if (gamePause_) {
+    if (state_ == State::GAME_PAUSED) {
         handleGamePauseState();
         return;
     }
     
-    if (gameOver_) {        
+    if (state_ == State::GAME_OVER || state_ == State::GAME_WIN) {
         handleGameOverState();
         return;
     }
@@ -297,7 +296,7 @@ int getClosestEnemyIndex(const std::vector<Enemy>& enemies, const Player& player
 
 void Game::processPlayerInput() {
     if (inputManager_->isKeyPressed('p')) {
-        gamePause_ = true;
+        state_ = State::GAME_PAUSED;
         return;
     }
 
@@ -341,19 +340,19 @@ void Game::processPlayerInput() {
 
 void Game::update() {
     // if player died
-    if (!gameOver_ && player_->getHealth() <= 0) {
-        gameOver_ = true;
+    if ((state_ != State::GAME_OVER) && player_->getHealth() <= 0) {
+        state_ = State::GAME_OVER;
         return;
     }
 
-    // if game is over, stop gameplay updates
-    if (gameOver_) {
+    // if game is over or player has won, stop gameplay updates
+    if (state_ == State::GAME_OVER || state_ == State::GAME_WIN) {
         handleGameOverState();
         return;
     }
 
     // if game is paused, stop gameplay updates
-    if (gamePause_) {
+    if (state_ == State::GAME_PAUSED) {
         handleGamePauseState();
         return;
     }
@@ -434,9 +433,13 @@ void Game::update() {
             e.markCountedAsKill();
         }
     }
-}
 
-// Game.cpp
+    // if all enemies are gone, player wins
+    if (getEnemiesRemaining() == 0) {
+        state_ = State::GAME_WIN;
+        return;
+    }
+}
 
 void Game::processWeaponInput() {
     // Handle weapon firing
@@ -584,13 +587,19 @@ void Game::render() {
     // render player HUD
     renderer_->drawHUD(*player_);
 
-    if (gamePause_) {
+    if (state_ == State::GAME_WIN) {
+        renderer_->drawGameWin(*player_);
+        renderer_->present();
+        return;
+    }
+
+    if (state_ == State::GAME_PAUSED) {
         renderer_->drawGamePause(*player_);
         renderer_->present();
         return;
     }
 
-     if (gameOver_) {
+     if (state_ == State::GAME_OVER) {
         renderer_->drawGameOver(*player_);
         renderer_->present();
         return;
@@ -702,6 +711,16 @@ std::vector<Vec2> Game::findDistributedSpawnPoints(unsigned int count)
     return result;
 }
 
+int Game::getEnemiesRemaining() const {
+    int count = 0;
+    for (const auto& e : enemies_) {
+        if (e.isAlive()) {
+            count++;
+        }
+    }
+    return count;
+}
+
 void Game::handleGameOverState() {
     // Quit game
     if (inputManager_->shouldExit()) {
@@ -711,8 +730,7 @@ void Game::handleGameOverState() {
     // Restart game
     if (inputManager_->isKeyPressed(static_cast<unsigned char>(13))) {
         init();
-        gameOver_ = false;
-        mainMenu_ = true;
+        state_ = State::START_SCREEN;
     }
 }
 
@@ -726,8 +744,7 @@ void Game::handleMainMenuState() {
     if (inputManager_->isKeyPressed('1')) {
         currentLevel_ = 1;
         init();
-        state_ = State::RUNNING;
-        mainMenu_ = false;
+        state_ = State::GAME_RUNNING;
         return;
     }
 
@@ -735,8 +752,7 @@ void Game::handleMainMenuState() {
     if (inputManager_->isKeyPressed('2')) {
         currentLevel_ = 2;
         init();
-        state_ = State::RUNNING;
-        mainMenu_ = false;
+        state_ = State::GAME_RUNNING;
         return;
     }
 
@@ -744,8 +760,7 @@ void Game::handleMainMenuState() {
     if (inputManager_->isKeyPressed('3')) {
         currentLevel_ = 3;
         init();
-        state_ = State::RUNNING;
-        mainMenu_ = false;
+        state_ = State::GAME_RUNNING;
         return;
     }
 }
@@ -757,7 +772,6 @@ void Game::handleGamePauseState() {
     }
 
     if (inputManager_->isKeyPressed('c')) {
-        state_ = State::RUNNING;
-        gamePause_ = false;
+        state_ = State::GAME_RUNNING;
     }
 }
