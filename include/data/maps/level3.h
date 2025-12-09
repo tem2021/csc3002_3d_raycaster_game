@@ -6,6 +6,7 @@ namespace MapData {
     constexpr int LEVEL3_HEIGHT = 64;
     constexpr int LEVEL3_INIT_X = 2;
     constexpr int LEVEL3_INIT_Y = 10;
+    constexpr int LEVEL3_ENEMY_AMOUNT = 80;
 
     static int LEVEL3[LEVEL3_HEIGHT][LEVEL3_WIDTH] = {
         {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},

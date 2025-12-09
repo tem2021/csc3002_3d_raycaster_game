@@ -62,14 +62,12 @@ void Game::init() {
     // gain the size of the screen
     screenWidth_ = GameConfig::WINDOW_WIDTH;
     screenHeight_ = GameConfig::WINDOW_HEIGHT;
-
-    currentLevel_ = GameConfig::DEFAULT_LEVEL;
-
-    
-    
     
     // create the map
     int tileSize = 0;
+
+    // default enemy count
+    int enemyCount = 20;    // 新的全地图均匀生成40个
 
     switch (currentLevel_) {
         case 1: {
@@ -83,6 +81,7 @@ void Game::init() {
                 MapData::LEVEL1_INIT_Y,
                 tileSize
             );
+            enemyCount = MapData::LEVEL1_ENEMY_AMOUNT;
             break;
         }
 
@@ -97,6 +96,7 @@ void Game::init() {
                 MapData::LEVEL2_INIT_Y,
                 tileSize
             );
+            enemyCount = MapData::LEVEL2_ENEMY_AMOUNT;
             break;
         }
 
@@ -111,6 +111,7 @@ void Game::init() {
                 MapData::LEVEL3_INIT_Y,
                 tileSize
             );
+            enemyCount = MapData::LEVEL3_ENEMY_AMOUNT;
             break;
         }
 
@@ -125,12 +126,11 @@ void Game::init() {
                 MapData::LEVEL1_INIT_Y,
                 tileSize
             );
+            enemyCount = MapData::LEVEL1_ENEMY_AMOUNT;
             break;
         }
     }
-    
-    
-    
+        
     // create the player
     float moveSpeed = GameConfig::MOVE_SPEED_FACTOR * tileSize;
     int health = PlayerConfig::MAX_HEALTH;
@@ -153,14 +153,12 @@ void Game::init() {
         screenWidth_ / 2,
         screenHeight_ / 2
     );
+    
     // --- init enemies ---
-    enemies_.clear();
-
-    int enemyCount = 20;    // 新的全地图均匀生成40个
+    enemies_.clear();    
     auto spawnPoints = findDistributedSpawnPoints(enemyCount);
 
     for (auto& pos : spawnPoints) {
-
         int r = rand() % 3;
         Enemy::EnemyType type;
         float speed;
@@ -713,7 +711,8 @@ void Game::handleGameOverState() {
     // Restart game
     if (inputManager_->isKeyPressed(static_cast<unsigned char>(13))) {
         init();
-        gameOver_ = false;        
+        gameOver_ = false;
+        mainMenu_ = true;
     }
 }
 

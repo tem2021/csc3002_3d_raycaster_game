@@ -20,7 +20,6 @@ namespace GameConfig {
     constexpr int FRAME_TIME_MS = 1000 / TARGET_FPS;
     constexpr int WINDOW_WIDTH = 1280;
     constexpr int WINDOW_HEIGHT = 720;
-    constexpr int DEFAULT_LEVEL = 1;
 }
 
 namespace RenderConfig {
