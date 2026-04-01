@@ -2,53 +2,33 @@
 
 _A game where you feed hungry animals_
 
----
 
 ## How to run
 
-Install [CMake] (https://cmake.org/download/)
+You will need the OpenGL/GLUT libraries 
 
-Create a folder called build in the root of the project folder, then change directory to the build folder
+```bash
+# ubuntu for example
+sudo apt-get update
+sudo apt-get install libgl1-mesa-dev libglu1-mesa-dev freeglut3-dev
 
-Use ``cmake ..`` and then ``make`` and there will be an executable in the build folder
+# build & run
+make run
+```
 
-To run from VS Code, install the CMake Tools extension
-
-CTRL + Shift + P and type ``CMake: Configure`` and choose a kit
-
-There should be a build button on the bottom bar. You can also build by CTRL + Shift + P and typing ``CMake: Build``
 
 ## Game controls
 
-mouse: vision control
+- `mouse`: vision control
+- `wasd `: movement
+- `LMB  `: fire weapon
+- `r    `: reload weapon
+- `1    `: watermelon (hippo)
+- `2    `: bamboo (panda)
+- `3    `: banana (monkey)
+- `i    `: toggle debug info
+- `Esc  `: quit game 
+- `p    `: pause game 
+- `c    `: continue game 
+- `Enter`: restart game 
 
-wasd: player movement
-
-left mouse button: fire weapon
-
-r: reload weapon
-
-1: watermelon (for hippo)
-
-2: bamboo (for panda)
-
-3: banana (for monkey)
-
-i: toggle debug info
-
-escape key: quit game (can use any time)
-
-p: pause game (can use any time)
-
-c: continue game (can only use when game is paused)
-
-enter key: restart game (can only use when game is over)
-
-## Credits
-
-- [@tem2021](https://github.com/tem2021) - Map design team
-- [@prae-mai](https://github.com/prae-mai) - Map design team
-- [@Julia047](https://github.com/Julia047) - Enemy design team
-- [@QianBeiDeWangBa2157](https://github.com/QianBeiDeWangBa2157) - Enemy design team
-- [@lis-shhjd](https://github.com/lis-shhjd) - Weapon design team
-- [@luoyuanhao2157](https://github.com/luoyuanhao2157) - Weapon design team
